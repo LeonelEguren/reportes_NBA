@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NBA Analytics</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<style>
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { font-family: 'Inter', sans-serif; background: #0c0e12; color: #e2e2e8; margin: 0; overflow-x: hidden; }
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; line-height:1; }
+.fill-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+/* ── LAYOUT ── */
+#sidebar { position:fixed; left:0; top:0; height:100%; width:260px; background:#111318; border-right:1px solid #5a413a; display:flex; flex-direction:column; z-index:50; transition:transform .3s ease; }
+#sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:40; }
+#main-wrapper { margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
+#topnav { position:sticky; top:0; z-index:30; background:#111318; border-bottom:1px solid #5a413a; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.page { display:none; flex:1; }
+.page.active { display:flex; flex-direction:column; }
+.page-inner { padding:24px; flex:1; display:flex; flex-direction:column; }
+
+/* ── SIDEBAR NAV ── */
+.nav-link { display:flex; align-items:center; gap:14px; padding:10px 16px; border-left:3px solid transparent; color:#e2bfb6; font-size:13px; font-weight:600; letter-spacing:.05em; text-decoration:none; transition:all .2s; cursor:pointer; border-radius:0 8px 8px 0; margin-right:8px; }
+.nav-link:hover { background:#1e2024; color:#e2e2e8; }
+.nav-link.active { border-left-color:#ffb874; background:rgba(255,184,116,.1); color:#e2e2e8; }
+.nav-link.active .nav-icon { color:#ffb874; }
+
+/* ── STAT CARDS ── */
+.stat-card { background:#111318; border:1px solid #5a413a; border-radius:12px; padding:16px; position:relative; overflow:hidden; transition:border-color .2s, transform .15s; }
+.stat-card:hover { border-color:#ffb874; transform:translateY(-1px); }
+.stat-card .corner { position:absolute; right:-16px; top:-16px; width:64px; height:64px; background:#1e2024; border-radius:0 0 0 100%; opacity:.6; }
+.stat-value { font-family:'Bebas Neue'; font-size:40px; line-height:1; }
+
+/* ── TABLES ── */
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th { padding:11px 14px; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#e2bfb6; background:#0c0e12; border-bottom:1px solid #5a413a; text-align:left; white-space:nowrap; }
+.data-table td { padding:11px 14px; border-bottom:1px solid rgba(90,65,58,.4); font-size:13px; }
+.data-table tbody tr:hover td { background:#1a1c20; }
+.data-table tbody tr:last-child td { border-bottom:none; }
+
+/* ── BADGES ── */
+.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+.badge-admin   { background:rgba(255,184,116,.12); border:1px solid rgba(255,184,116,.3); color:#ffb874; }
+.badge-viewer  { background:#1e2024; border:1px solid #5a413a; color:#e2bfb6; }
+.badge-analyst { background:rgba(193,198,218,.1); border:1px solid rgba(193,198,218,.3); color:#c1c6da; }
+.badge-active  { background:#1e2024; border:1px solid #5a413a; color:#e2e2e8; }
+.badge-inactive{ background:#0c0e12; border:1px solid #5a413a; color:#e2bfb6; opacity:.6; }
+.badge-injured { background:rgba(255,180,171,.12); border:1px solid rgba(255,180,171,.3); color:#ffb4ab; }
+
+/* ── BUTTONS ── */
+.btn-primary   { background:#e8512a; color:#fff; font-size:13px; font-weight:600; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all .2s; letter-spacing:.02em; }
+.btn-primary:hover { background:#f95d35; box-shadow:0 0 12px rgba(232,81,42,.35); }
+.btn-secondary { background:transparent; color:#e2e2e8; font-size:13px; font-weight:600; padding:8px 16px; border-radius:8px; border:1px solid #5a413a; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all .2s; }
+.btn-secondary:hover { background:#1e2024; border-color:#aa8982; }
+.btn-icon { background:transparent; border:none; cursor:pointer; color:#e2bfb6; padding:5px; border-radius:6px; transition:all .15s; display:inline-flex; align-items:center; justify-content:center; }
+.btn-icon:hover { color:#ffb874; background:#1e2024; }
+.btn-icon.danger:hover { color:#ffb4ab; background:rgba(255,180,171,.1); }
+
+/* ── SEARCH ── */
+.search-box { background:#1a1c20; border:1px solid #5a413a; border-radius:9999px; display:flex; align-items:center; padding:7px 14px; gap:8px; transition:border-color .2s; }
+.search-box:focus-within { border-color:#ffb874; }
+.search-box input { background:transparent; border:none; outline:none; color:#e2e2e8; font-size:13px; }
+.search-box input::placeholder { color:#e2bfb6; opacity:.6; }
+
+/* ── TABS (topnav) ── */
+.nav-tab { padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600; letter-spacing:.04em; border:1px solid transparent; background:transparent; color:#e2bfb6; cursor:pointer; transition:all .2s; }
+.nav-tab:hover { background:#1e2024; color:#e2e2e8; }
+.nav-tab.active { color:#ffb874; border-bottom:2px solid #ffb874; border-radius:0; padding-bottom:5px; }
+
+/* ── TABLEAU TABS ── */
+.tableau-tabs { display:flex; gap:4px; flex-wrap:wrap; }
+.tab-btn { padding:6px 13px; border-radius:6px; font-size:12px; font-weight:600; letter-spacing:.04em; border:1px solid #5a413a; background:transparent; color:#e2bfb6; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.tab-btn.active { background:#ffb874; color:#4b2800; border-color:#ffb874; }
+.tab-btn:hover:not(.active) { background:#1e2024; color:#e2e2e8; }
+
+/* ── TABLEAU IFRAME WRAPPER ── */
+#tableau-wrapper {
+  position: relative;
+  width: 100%;
+  /* responsive: fills width, uses aspect ratio as floor, but can grow */
+  min-height: 520px;
+  height: calc(100vh - 290px); /* viewport minus topnav+header+tabs */
+  max-height: 900px;
+  background: #0c0e12;
+  overflow: hidden;
+}
+#tableau-wrapper iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+/* Fullscreen override */
+#tableau-card:fullscreen #tableau-wrapper,
+#tableau-card:-webkit-full-screen #tableau-wrapper {
+  height: 100vh;
+  max-height: none;
+}
+
+/* ── MODAL ── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:100; align-items:center; justify-content:center; padding:16px; }
+.modal-overlay.open { display:flex; }
+.modal { background:#1e2024; border:1px solid #5a413a; border-radius:16px; padding:24px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.modal-title { font-family:'Bebas Neue'; font-size:26px; color:#e2e2e8; letter-spacing:.03em; }
+
+/* ── FORM ── */
+.form-group { margin-bottom:14px; }
+.form-label { display:block; font-size:11px; font-weight:600; letter-spacing:.06em; color:#e2bfb6; margin-bottom:5px; text-transform:uppercase; }
+.form-input  { width:100%; background:#1a1c20; border:1px solid #5a413a; border-radius:8px; padding:9px 12px; color:#e2e2e8; font-size:13px; outline:none; transition:border-color .2s; font-family:'Inter',sans-serif; }
+.form-input:focus  { border-color:#ffb874; box-shadow:0 0 0 3px rgba(255,184,116,.12); }
+.form-select { width:100%; background:#1a1c20; border:1px solid #5a413a; border-radius:8px; padding:9px 12px; color:#e2e2e8; font-size:13px; outline:none; appearance:none; cursor:pointer; font-family:'Inter',sans-serif; }
+.form-select:focus { border-color:#ffb874; }
+
+/* ── PAGINATION ── */
+.pagination { display:flex; gap:3px; align-items:center; }
+.page-btn { background:transparent; border:none; color:#e2bfb6; padding:5px 9px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; transition:all .15s; line-height:1.4; }
+.page-btn:hover { background:#333539; color:#e2e2e8; }
+.page-btn.active { background:#333539; color:#e2e2e8; font-weight:700; }
+.page-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+/* ── MINI CHARTS ── */
+.bar-chart { display:flex; align-items:flex-end; gap:3px; height:72px; }
+.bar { background:#ffb874; border-radius:3px 3px 0 0; transition:height .7s ease, background .2s; min-width:8px; cursor:default; }
+.bar:hover { background:#e8512a; }
+
+/* ── FILTER PILLS ── */
+.filter-pill { padding:5px 13px; border-radius:9999px; font-size:12px; font-weight:600; letter-spacing:.04em; border:1px solid #5a413a; background:transparent; color:#e2bfb6; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.filter-pill.active { background:rgba(255,184,116,.15); border-color:#ffb874; color:#ffb874; }
+.filter-pill:hover:not(.active) { background:#1e2024; color:#e2e2e8; }
+
+/* ── TOAST ── */
+#toast { position:fixed; bottom:24px; right:24px; background:#1e2024; border:1px solid #5a413a; border-radius:10px; padding:11px 18px; display:flex; align-items:center; gap:10px; font-size:13px; color:#e2e2e8; z-index:200; transform:translateY(80px); opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1); pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+#toast.show { transform:translateY(0); opacity:1; }
+#toast .t-icon { color:#ffb874; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:#111318; }
+::-webkit-scrollbar-thumb { background:#5a413a; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:#aa8982; }
+
+/* ── TYPOGRAPHY ── */
+.section-title { font-family:'Bebas Neue'; font-size:30px; letter-spacing:.04em; color:#e2e2e8; line-height:1; }
+.section-sub { color:#e2bfb6; font-size:13px; margin-top:4px; }
+
+/* ── PULSE DOT ── */
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.35} }
+.pulse { animation:pulse-dot 2s infinite; }
+
+/* ── MOBILE ── */
+#hamburger { display:none; }
+@media (max-width:767px) {
+  #sidebar { transform:translateX(-100%); }
+  #sidebar.open { transform:translateX(0); }
+  #sidebar-overlay.open { display:block; }
+  #main-wrapper { margin-left:0; }
+  #hamburger { display:flex; }
+  .hide-mob { display:none !important; }
+  .data-table th:nth-child(3), .data-table td:nth-child(3) { display:none; }
+  .modal { padding:18px; }
+  #tableau-wrapper { min-height:340px; height:calc(100vh - 240px); }
+  .page-inner { padding:16px; }
+}
+@media (max-width:480px) {
+  .data-table th:nth-child(5),.data-table td:nth-child(5),
+  .data-table th:nth-child(6),.data-table td:nth-child(6) { display:none; }
+}
+</style>
+</head>
+<body>
+
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside id="sidebar">
+  <div style="padding:20px 20px 12px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+      <div style="width:32px;height:32px;background:#e8512a;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span class="material-symbols-outlined fill-icon" style="color:#fff;font-size:19px;">sports_basketball</span>
+      </div>
+      <h2 style="font-family:'Bebas Neue';font-size:21px;color:#ffb874;letter-spacing:.06em;line-height:1;">NBA ANALYTICS</h2>
+    </div>
+   
+  </div>
+
+  <div style="height:1px;background:#5a413a;margin:0 16px 10px;"></div>
+
+  <nav style="flex:1;display:flex;flex-direction:column;gap:2px;padding:0 4px;">
+    <a class="nav-link active" onclick="navigate('dashboard')" id="nav-dashboard">
+      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">dashboard</span>
+      <span>Dashboard</span>
+    </a>
+    <a class="nav-link" onclick="navigate('jugadores')" id="nav-jugadores">
+      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">directions_run</span>
+      <span>Jugadores</span>
+    </a>
+    <a class="nav-link" onclick="navigate('usuarios')" id="nav-usuarios">
+      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">manage_accounts</span>
+      <span>Usuarios</span>
+    </a>
+  </nav>
+
+  <div style="padding:12px 16px;border-top:1px solid #5a413a;">
+    <div style="display:flex;align-items:center;gap:8px;color:#e2bfb6;font-size:11px;opacity:.7;">
+      <span class="material-symbols-outlined" style="font-size:15px;">info</span>
+      <span>Grupo 1</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div id="main-wrapper">
+
+  <!-- TOP NAV -->
+  <nav id="topnav">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button id="hamburger" onclick="toggleSidebar()" style="background:transparent;border:none;cursor:pointer;color:#e2bfb6;padding:4px;" aria-label="Menu">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <span style="font-family:'Bebas Neue';font-size:22px;color:#ffb874;letter-spacing:.06em;" class="hide-mob">NBA ANALYTICS</span>
+      <div style="display:flex;gap:2px;margin-left:4px;" class="hide-mob">
+        <button class="nav-tab active" onclick="navigate('dashboard')" id="tnav-dashboard">Visualización</button>
+        <button class="nav-tab" onclick="navigate('usuarios')" id="tnav-gestion">Gestión</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="search-box hide-mob" style="width:200px;">
+        <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
+        <input type="text" placeholder="Buscar..." id="global-search" oninput="handleSearch(this.value)" style="width:140px;"/>
+      </div>
+      <button class="btn-icon" onclick="showToast('Sin notificaciones nuevas','notifications')" title="Notificaciones">
+        <span class="material-symbols-outlined fill-icon" style="font-size:21px;">notifications</span>
+      </button>
+      <button class="btn-icon" onclick="openModal('settings-modal')" title="Configuración">
+        <span class="material-symbols-outlined" style="font-size:21px;">settings</span>
+      </button>
+      <div style="width:32px;height:32px;border-radius:50%;background:#333539;border:2px solid #5a413a;overflow:hidden;cursor:pointer;flex-shrink:0;" onclick="openModal('profile-modal')">
+        <img src="https://i.pravatar.cc/32?img=12" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══ PAGE: DASHBOARD ═══ -->
+  <div id="page-dashboard" class="page active">
+    <div class="page-inner">
+      <!-- Header -->
+      <div style="margin-bottom:20px;">
+        <h2 class="section-title">DASHBOARD NBA</h2>
+        <p class="section-sub">Análisis de datos históricos NBA 1979–2026 · Tableau Public</p>
+      </div>
+
+      <!-- KPI Row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;" id="kpi-grid">
+        <div class="stat-card">
+          <div class="corner"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Teams</span>
+            <span class="material-symbols-outlined fill-icon" style="color:#e8512a;font-size:19px;">groups</span>
+          </div>
+          <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">30</div>
+          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Franquicias activas</div>
+        </div>
+        <div class="stat-card">
+          <div class="corner"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Seasons</span>
+            <span class="material-symbols-outlined fill-icon" style="color:#e8512a;font-size:19px;">calendar_month</span>
+          </div>
+          <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">46</div>
+          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Temporadas (1979–2026)</div>
+        </div>
+        <div class="stat-card">
+          <div class="corner"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Players</span>
+            <span class="material-symbols-outlined fill-icon" style="color:#e8512a;font-size:19px;">directions_run</span>
+          </div>
+          <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">4800+</div>
+          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Jugadores en dataset</div>
+        </div>
+        <div class="stat-card">
+          <div class="corner"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Dataset</span>
+            <span class="material-symbols-outlined fill-icon" style="color:#ffb874;font-size:19px;">database</span>
+          </div>
+          <div class="stat-value" style="color:#ffb874;margin-top:6px;">NBA</div>
+          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Kaggle · Basketball Ref.</div>
+        </div>
+      </div>
+
+      <!-- Tableau Card -->
+      <div id="tableau-card" style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
+        <!-- Card Header -->
+        <div style="padding:11px 16px;border-bottom:1px solid #5a413a;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:#0c0e12;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#e8512a;">analytics</span>
+            <span style="font-size:13px;font-weight:600;color:#e2e2e8;">Performance Analytics Canvas</span>
+            <span style="font-size:11px;color:#e2bfb6;background:#1e2024;padding:2px 8px;border-radius:4px;border:1px solid #5a413a;" id="current-tab-label">Dashboard 1</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-icon" title="Pantalla completa" onclick="toggleFullscreen()">
+              <span class="material-symbols-outlined" style="font-size:18px;">fullscreen</span>
+            </button>
+            <button class="btn-icon" title="Abrir en Tableau Public" onclick="openTableauPublic()">
+              <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Bar -->
+        <div style="padding:10px 16px;background:#0c0e12;border-bottom:1px solid #5a413a;flex-shrink:0;">
+          <div class="tableau-tabs" id="tableau-tabs">
+            <button class="tab-btn" onclick="selectTab(this,'hoja1','Hoja 1')">Hoja 1</button>
+            <button class="tab-btn" onclick="selectTab(this,'hoja2','Hoja 2')">Hoja 2</button>
+            <button class="tab-btn" onclick="selectTab(this,'hoja3','Hoja 3')">Hoja 3</button>
+            <button class="tab-btn" onclick="selectTab(this,'hoja4','Hoja 4')">Hoja 4</button>
+            <button class="tab-btn" onclick="selectTab(this,'hoja5','Hoja 5')">Hoja 5</button>
+            <button class="tab-btn active" onclick="selectTab(this,'dash1','Dashboard 1')">Dashboard 1</button>
+            <button class="tab-btn" onclick="selectTab(this,'dash2','Dashboard 2')">Dashboard 2</button>
+            <button class="tab-btn" onclick="selectTab(this,'dash3','Dashboard 3')">Dashboard 3</button>
+          </div>
+        </div>
+
+        <!-- Iframe wrapper — fills remaining height -->
+        <div id="tableau-wrapper">
+          <iframe id="tableau-frame"
+            src="https://public.tableau.com/views/AppNBA2/Dashboard1?:embed=y&:showVizHome=no&:tabs=no&:toolbar=bottom&:device=desktop&:animate_transition=yes"
+            allowfullscreen
+            title="Performance Analytics Canvas - NBA">
+          </iframe>
+        </div>
+      </div>
+
+      <!-- Mini charts row (below tableau) -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px;">
+
+        <!-- 3PT trend -->
+        <div class="stat-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">% Triples Liga</div>
+              <div style="font-family:'Bebas Neue';font-size:30px;color:#ffb874;line-height:1;margin-top:2px;">38.2%</div>
+            </div>
+            <span style="font-size:11px;color:#4ade80;background:rgba(74,222,128,.1);padding:3px 7px;border-radius:4px;border:1px solid rgba(74,222,128,.25);flex-shrink:0;">▲ +2.1%</span>
+          </div>
+          <div class="bar-chart" id="chart-3pt"></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#e2bfb6;margin-top:4px;opacity:.7;">
+            <span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span>
+          </div>
+        </div>
+
+        <!-- Top PER -->
+        <div class="stat-card">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;margin-bottom:10px;">Top 5 PER Líderes (2024-25)</div>
+          <div id="per-list" style="display:flex;flex-direction:column;gap:7px;"></div>
+        </div>
+
+        <!-- PPG Liga -->
+        <div class="stat-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Pts Promedio Liga</div>
+              <div style="font-family:'Bebas Neue';font-size:30px;color:#e2e2e8;line-height:1;margin-top:2px;">114.8</div>
+            </div>
+            <span style="font-size:11px;color:#4ade80;background:rgba(74,222,128,.1);padding:3px 7px;border-radius:4px;border:1px solid rgba(74,222,128,.25);flex-shrink:0;">▲ +0.9</span>
+          </div>
+          <div class="bar-chart" id="chart-ppg"></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#e2bfb6;margin-top:4px;opacity:.7;">
+            <span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /page-inner -->
+  </div>
+
+  <!-- ═══ PAGE: JUGADORES ═══ -->
+  <div id="page-jugadores" class="page">
+    <div class="page-inner">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h2 class="section-title">JUGADORES NBA</h2>
+          <p class="section-sub">Estadísticas por temporada 2024-25 · ABM completo</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-secondary" onclick="exportPlayers()">
+            <span class="material-symbols-outlined" style="font-size:16px;">download</span>Exportar CSV
+          </button>
+          <button class="btn-primary" onclick="openAddPlayer()">
+            <span class="material-symbols-outlined" style="font-size:16px;">add</span>Agregar Jugador
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <div class="search-box" style="flex:1;min-width:180px;">
+          <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
+          <input type="text" placeholder="Buscar jugador o equipo..." id="player-search" oninput="filterPlayers()" style="flex:1;min-width:80px;"/>
+        </div>
+        <button class="filter-pill active" onclick="filterPos(this,'ALL')">Todos</button>
+        <button class="filter-pill" onclick="filterPos(this,'G')">Guard</button>
+        <button class="filter-pill" onclick="filterPos(this,'F')">Forward</button>
+        <button class="filter-pill" onclick="filterPos(this,'C')">Center</button>
+        <select class="form-select" style="width:auto;padding:6px 12px;font-size:12px;" onchange="sortPlayers(this.value)">
+          <option value="per">↓ PER</option>
+          <option value="ppg">↓ PPG</option>
+          <option value="name">A–Z Nombre</option>
+          <option value="team">A–Z Equipo</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;">
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:36px;">#</th>
+                <th>Jugador</th>
+                <th>Equipo</th>
+                <th>Pos</th>
+                <th style="text-align:right;">PPG</th>
+                <th style="text-align:right;">RPG</th>
+                <th style="text-align:right;">APG</th>
+                <th style="text-align:right;color:#ffb874;">PER</th>
+                <th style="text-align:right;">TS%</th>
+                <th>Estado</th>
+                <th style="text-align:center;width:110px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="players-tbody"></tbody>
+          </table>
+        </div>
+        <div style="padding:10px 16px;border-top:1px solid rgba(90,65,58,.4);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#0c0e12;">
+          <span style="font-size:12px;color:#e2bfb6;" id="players-count"></span>
+          <div class="pagination" id="players-pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ PAGE: USUARIOS ═══ -->
+  <div id="page-usuarios" class="page">
+    <div class="page-inner">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h2 class="section-title">GESTIÓN DE USUARIOS</h2>
+          <p class="section-sub">ABM de cuentas · Roles y permisos del sistema</p>
+        </div>
+        <button class="btn-primary" onclick="openAddUser()">
+          <span class="material-symbols-outlined" style="font-size:16px;">person_add</span>Nuevo Usuario
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+        <div class="stat-card">
+          <div class="corner"></div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Total</div>
+          <div class="stat-value" style="color:#ffb874;margin-top:4px;" id="stat-total">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="corner"></div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Activos</div>
+          <div class="stat-value" style="color:#e2e2e8;margin-top:4px;" id="stat-active">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="corner"></div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Admins</div>
+          <div class="stat-value" style="color:#ffb4a2;margin-top:4px;" id="stat-admins">0</div>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <div class="search-box" style="flex:1;min-width:180px;">
+          <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
+          <input type="text" placeholder="Buscar por nombre o correo..." id="user-search" oninput="filterUsers()" style="flex:1;min-width:80px;"/>
+        </div>
+        <button class="filter-pill active" onclick="filterRole(this,'ALL')">Todos</button>
+        <button class="filter-pill" onclick="filterRole(this,'ADMIN')">Admin</button>
+        <button class="filter-pill" onclick="filterRole(this,'ANALYST')">Analyst</button>
+        <button class="filter-pill" onclick="filterRole(this,'VIEWER')">Viewer</button>
+      </div>
+
+      <!-- Table -->
+      <div style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;">
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th style="text-align:center;width:90px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+        <div style="padding:10px 16px;border-top:1px solid rgba(90,65,58,.4);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#0c0e12;">
+          <span style="font-size:12px;color:#e2bfb6;" id="users-count"></span>
+          <div class="pagination" id="users-pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main-wrapper -->
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- User modal -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="user-modal-title">NUEVO USUARIO</h3>
+      <button class="btn-icon" onclick="closeModal('user-modal')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <input type="hidden" id="user-edit-id"/>
+    <div class="form-group">
+      <label class="form-label">Nombre completo *</label>
+      <input class="form-input" id="user-name" type="text" placeholder="Ej: Carlos Mendoza"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Correo electrónico *</label>
+      <input class="form-input" id="user-email" type="email" placeholder="correo@analytics.nba.com"/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Rol</label>
+        <select class="form-select" id="user-role">
+          <option value="ADMIN">Admin</option>
+          <option value="ANALYST">Analyst</option>
+          <option value="VIEWER" selected>Viewer</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Estado</label>
+        <select class="form-select" id="user-status">
+          <option value="Activo" selected>Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;">
+      <button class="btn-secondary" onclick="closeModal('user-modal')">Cancelar</button>
+      <button class="btn-primary" onclick="saveUser()">
+        <span class="material-symbols-outlined" style="font-size:15px;">save</span>Guardar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Player modal -->
+<div class="modal-overlay" id="player-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="player-modal-title">NUEVO JUGADOR</h3>
+      <button class="btn-icon" onclick="closeModal('player-modal')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <input type="hidden" id="player-edit-id"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">Nombre completo *</label>
+        <input class="form-input" id="p-name" type="text" placeholder="Ej: LeBron James"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Equipo *</label>
+        <input class="form-input" id="p-team" type="text" placeholder="Ej: Lakers"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Posición</label>
+        <select class="form-select" id="p-pos">
+          <option value="PG">PG – Point Guard</option>
+          <option value="SG">SG – Shooting Guard</option>
+          <option value="SF">SF – Small Forward</option>
+          <option value="PF">PF – Power Forward</option>
+          <option value="C">C – Center</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">PPG (pts/partido)</label>
+        <input class="form-input" id="p-ppg" type="number" step="0.1" min="0" placeholder="0.0"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">RPG (reb/partido)</label>
+        <input class="form-input" id="p-rpg" type="number" step="0.1" min="0" placeholder="0.0"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">APG (ast/partido)</label>
+        <input class="form-input" id="p-apg" type="number" step="0.1" min="0" placeholder="0.0"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">PER (eficiencia)</label>
+        <input class="form-input" id="p-per" type="number" step="0.1" min="0" placeholder="15.0"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">TS% (tiro real)</label>
+        <input class="form-input" id="p-ts" type="number" step="0.1" min="0" max="100" placeholder="55.0"/>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">Estado</label>
+        <select class="form-select" id="p-status">
+          <option value="Activo" selected>Activo</option>
+          <option value="Lesionado">Lesionado</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;">
+      <button class="btn-secondary" onclick="closeModal('player-modal')">Cancelar</button>
+      <button class="btn-primary" onclick="savePlayer()">
+        <span class="material-symbols-outlined" style="font-size:15px;">save</span>Guardar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <span class="material-symbols-outlined" style="font-size:44px;color:#ffb4ab;display:block;margin-bottom:8px;">warning</span>
+    <h3 class="modal-title" style="justify-content:center;margin-bottom:8px;">CONFIRMAR BAJA</h3>
+    <p style="color:#e2bfb6;font-size:13px;line-height:1.5;" id="confirm-msg"></p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;">
+      <button class="btn-secondary" onclick="closeModal('confirm-modal')">Cancelar</button>
+      <button style="background:#93000a;color:#ffdad6;font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;" onclick="executeDelete()">
+        <span class="material-symbols-outlined" style="font-size:15px;">delete</span>Eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Player detail -->
+<div class="modal-overlay" id="player-detail-modal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="pd-title"></h3>
+      <button class="btn-icon" onclick="closeModal('player-detail-modal')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div id="pd-content"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;">
+      <button class="btn-secondary" onclick="closeModal('player-detail-modal')">Cerrar</button>
+      <button class="btn-primary" id="pd-edit-btn">
+        <span class="material-symbols-outlined" style="font-size:15px;">edit</span>Editar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <h3 class="modal-title">CONFIGURACIÓN</h3>
+      <button class="btn-icon" onclick="closeModal('settings-modal')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1a1c20;border-radius:8px;border:1px solid #5a413a;">
+        <div><div style="font-size:13px;font-weight:600;">Tema</div><div style="font-size:11px;color:#e2bfb6;">Modo oscuro activo</div></div>
+        <span class="material-symbols-outlined fill-icon" style="color:#ffb874;">dark_mode</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1a1c20;border-radius:8px;border:1px solid #5a413a;">
+        <div><div style="font-size:13px;font-weight:600;">Idioma</div><div style="font-size:11px;color:#e2bfb6;">Español</div></div>
+        <span class="material-symbols-outlined" style="color:#e2bfb6;">language</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1a1c20;border-radius:8px;border:1px solid #5a413a;">
+        <div><div style="font-size:13px;font-weight:600;">Dataset</div><div style="font-size:11px;color:#e2bfb6;">NBA 1979–2026 · Kaggle</div></div>
+        <span class="material-symbols-outlined" style="color:#e2bfb6;">dataset</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#1a1c20;border-radius:8px;border:1px solid #5a413a;">
+        <div><div style="font-size:13px;font-weight:600;">Versión</div><div style="font-size:11px;color:#e2bfb6;">v1.0.0 · TP Integrador 2025 · Grupo 1</div></div>
+        <span class="material-symbols-outlined" style="color:#e2bfb6;">info</span>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:16px;">
+      <button class="btn-secondary" onclick="closeModal('settings-modal')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal" style="max-width:340px;">
+    <div class="modal-header">
+      <h3 class="modal-title">PERFIL</h3>
+      <button class="btn-icon" onclick="closeModal('profile-modal')"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div style="text-align:center;padding:4px 0 16px;">
+      <div style="width:68px;height:68px;border-radius:50%;overflow:hidden;margin:0 auto 10px;border:2px solid #e8512a;">
+        <img src="https://i.pravatar.cc/68?img=12" alt="Avatar" style="width:100%;height:100%;object-fit:cover;"/>
+      </div>
+      <h4 style="font-family:'Bebas Neue';font-size:20px;color:#e2e2e8;margin:0;">Admin · Grupo 1</h4>
+      <p style="font-size:12px;color:#e2bfb6;margin:3px 0 8px;">admin@nba.analytics.edu</p>
+      <span class="badge badge-admin"><span class="material-symbols-outlined" style="font-size:11px;">bolt</span>Admin</span>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button class="btn-secondary" onclick="closeModal('profile-modal')">Cerrar</button>
+      <button class="btn-primary" onclick="showToast('Edición disponible con backend','edit');closeModal('profile-modal')">
+        <span class="material-symbols-outlined" style="font-size:15px;">edit</span>Editar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">
+  <span class="material-symbols-outlined t-icon fill-icon" id="toast-icon">check_circle</span>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// DATA — Real NBA 2024-25 season stats
+// ════════════════════════════════════════════════════
+let usersData = [
+  {id:101,name:"Carlos Mendoza",   email:"c.mendoza@analytics.nba.com",  role:"ADMIN",   status:"Activo"},
+  {id:102,name:"Laura Silva",      email:"lsilva@analytics.nba.com",      role:"VIEWER",  status:"Activo"},
+  {id:103,name:"David Ortiz",      email:"d.ortiz@analytics.nba.com",     role:"VIEWER",  status:"Inactivo"},
+  {id:104,name:"Elena Torres",     email:"etorres@analytics.nba.com",     role:"ADMIN",   status:"Activo"},
+  {id:105,name:"Martín Gómez",     email:"m.gomez@analytics.nba.com",     role:"ANALYST", status:"Activo"},
+  {id:106,name:"Valentina Ruiz",   email:"v.ruiz@analytics.nba.com",      role:"VIEWER",  status:"Activo"},
+  {id:107,name:"Santiago López",   email:"s.lopez@analytics.nba.com",     role:"ANALYST", status:"Inactivo"},
+  {id:108,name:"Camila Reyes",     email:"c.reyes@analytics.nba.com",     role:"ADMIN",   status:"Activo"},
+];
+
+// Real NBA 2024-25 stats (Basketball Reference)
+let playersData = [
+  {id:1, name:"Nikola Jokić",              team:"Denver Nuggets",         pos:"C",  pos_g:"C",ppg:29.6,rpg:12.7,apg:10.2,per:33.3,ts:66.8,status:"Activo"},
+  {id:2, name:"Shai Gilgeous-Alexander",   team:"OKC Thunder",            pos:"PG", pos_g:"G",ppg:32.7,rpg:5.5, apg:6.4, per:32.1,ts:65.9,status:"Activo"},
+  {id:3, name:"Giannis Antetokounmpo",     team:"Milwaukee Bucks",        pos:"PF", pos_g:"F",ppg:30.4,rpg:12.2,apg:6.0, per:30.4,ts:62.0,status:"Activo"},
+  {id:4, name:"Luka Dončić",              team:"Dallas Mavericks",        pos:"PG", pos_g:"G",ppg:28.7,rpg:8.8, apg:7.8, per:28.2,ts:60.3,status:"Activo"},
+  {id:5, name:"Joel Embiid",               team:"Philadelphia 76ers",     pos:"C",  pos_g:"C",ppg:23.0,rpg:8.3, apg:3.0, per:27.8,ts:64.4,status:"Lesionado"},
+  {id:6, name:"Jayson Tatum",              team:"Boston Celtics",          pos:"SF", pos_g:"F",ppg:26.0,rpg:8.1, apg:5.3, per:24.1,ts:60.9,status:"Activo"},
+  {id:7, name:"Anthony Davis",             team:"LA Lakers",               pos:"C",  pos_g:"C",ppg:25.7,rpg:11.9,apg:3.5, per:27.2,ts:61.3,status:"Activo"},
+  {id:8, name:"Kevin Durant",              team:"Phoenix Suns",            pos:"SF", pos_g:"F",ppg:26.9,rpg:6.3, apg:5.3, per:24.3,ts:64.0,status:"Activo"},
+  {id:9, name:"LeBron James",              team:"LA Lakers",               pos:"SF", pos_g:"F",ppg:24.0,rpg:8.3, apg:9.0, per:24.6,ts:61.4,status:"Activo"},
+  {id:10,name:"Stephen Curry",             team:"Golden State Warriors",   pos:"PG", pos_g:"G",ppg:26.4,rpg:4.6, apg:5.0, per:22.0,ts:63.7,status:"Activo"},
+  {id:11,name:"Tyrese Haliburton",         team:"Indiana Pacers",          pos:"PG", pos_g:"G",ppg:20.1,rpg:4.2, apg:10.9,per:21.8,ts:61.3,status:"Activo"},
+  {id:12,name:"Domantas Sabonis",          team:"Sacramento Kings",        pos:"C",  pos_g:"C",ppg:20.6,rpg:13.2,apg:8.4, per:24.0,ts:62.7,status:"Activo"},
+  {id:13,name:"Donovan Mitchell",          team:"Cleveland Cavaliers",     pos:"SG", pos_g:"G",ppg:24.7,rpg:5.1, apg:5.7, per:21.5,ts:58.2,status:"Activo"},
+  {id:14,name:"Devin Booker",              team:"Phoenix Suns",            pos:"SG", pos_g:"G",ppg:25.0,rpg:4.6, apg:6.3, per:21.3,ts:61.8,status:"Activo"},
+  {id:15,name:"Kawhi Leonard",             team:"LA Clippers",             pos:"SF", pos_g:"F",ppg:22.4,rpg:5.9, apg:3.4, per:21.7,ts:62.1,status:"Lesionado"},
+  {id:16,name:"Damian Lillard",            team:"Milwaukee Bucks",         pos:"PG", pos_g:"G",ppg:25.3,rpg:4.4, apg:7.1, per:21.2,ts:62.6,status:"Activo"},
+  {id:17,name:"Karl-Anthony Towns",        team:"New York Knicks",         pos:"C",  pos_g:"C",ppg:24.8,rpg:13.3,apg:3.4, per:22.9,ts:62.5,status:"Activo"},
+  {id:18,name:"Cade Cunningham",           team:"Detroit Pistons",         pos:"PG", pos_g:"G",ppg:26.0,rpg:5.9, apg:9.1, per:21.9,ts:58.7,status:"Activo"},
+  {id:19,name:"Bam Adebayo",               team:"Miami Heat",              pos:"C",  pos_g:"C",ppg:19.1,rpg:10.4,apg:4.2, per:21.0,ts:60.1,status:"Activo"},
+  {id:20,name:"Ja Morant",                 team:"Memphis Grizzlies",       pos:"PG", pos_g:"G",ppg:22.4,rpg:5.9, apg:9.1, per:22.4,ts:59.3,status:"Activo"},
+];
+
+let userNextId = 109, playerNextId = 21;
+let curUserPage = 1, curPlayerPage = 1;
+const usersPerPage = 5, playersPerPage = 10;
+let userRoleFilter = 'ALL', playerPosFilter = 'ALL';
+let pendingDelete = null;
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+
+  if (page === 'dashboard') document.getElementById('tnav-dashboard').classList.add('active');
+  else document.getElementById('tnav-gestion').classList.add('active');
+
+  if (page === 'usuarios') renderUsers();
+  if (page === 'jugadores') renderPlayers();
+  closeSidebar();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ════════════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', function(e){ if(e.target===this) closeModal(this.id); }));
+
+// ════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════
+function showToast(msg, icon='check_circle') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ════════════════════════════════════════════════════
+// BADGES
+// ════════════════════════════════════════════════════
+function roleBadge(r) {
+  const map = { ADMIN:'<span class="badge badge-admin"><span class="material-symbols-outlined" style="font-size:11px;">bolt</span>Admin</span>',
+                ANALYST:'<span class="badge badge-analyst"><span class="material-symbols-outlined" style="font-size:11px;">bar_chart</span>Analyst</span>',
+                VIEWER:'<span class="badge badge-viewer"><span class="material-symbols-outlined" style="font-size:11px;">visibility</span>Viewer</span>' };
+  return map[r] || map.VIEWER;
+}
+function statusBadge(s) {
+  if (s==='Activo')   return `<span class="badge badge-active"><span class="pulse" style="width:5px;height:5px;border-radius:50%;background:#4ade80;display:inline-block;margin-right:3px;"></span>Activo</span>`;
+  if (s==='Lesionado')return `<span class="badge badge-injured"><span style="width:5px;height:5px;border-radius:50%;background:#ffb4ab;display:inline-block;margin-right:3px;"></span>Lesionado</span>`;
+  return `<span class="badge badge-inactive"><span style="width:5px;height:5px;border-radius:50%;background:#aa8982;display:inline-block;margin-right:3px;opacity:.6;"></span>Inactivo</span>`;
+}
+
+// ════════════════════════════════════════════════════
+// USERS
+// ════════════════════════════════════════════════════
+function getFilteredUsers() {
+  const q = (document.getElementById('user-search')?.value||'').toLowerCase();
+  return usersData.filter(u => (userRoleFilter==='ALL'||u.role===userRoleFilter) && (!q||u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q)));
+}
+
+function renderUsers() {
+  const filtered = getFilteredUsers();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / usersPerPage));
+  if (curUserPage > totalPages) curUserPage = totalPages;
+  const start = (curUserPage-1)*usersPerPage;
+  const pageData = filtered.slice(start, start+usersPerPage);
+
+  document.getElementById('users-tbody').innerHTML = pageData.map(u=>`
+    <tr>
+      <td style="color:#e2bfb6;font-weight:600;">#${u.id}</td>
+      <td style="font-weight:600;">${u.name}</td>
+      <td style="color:#e2bfb6;font-size:12px;">${u.email}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${statusBadge(u.status)}</td>
+      <td style="text-align:center;">
+        <div style="display:flex;gap:2px;justify-content:center;">
+          <button class="btn-icon" onclick="editUser(${u.id})" title="Editar usuario"><span class="material-symbols-outlined" style="font-size:17px;">edit</span></button>
+          <button class="btn-icon danger" onclick="confirmDelete('user',${u.id},'${u.name.replace(/'/g,"\\'")}'')" title="Eliminar usuario"><span class="material-symbols-outlined" style="font-size:17px;">delete</span></button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  const end = Math.min(start+usersPerPage, filtered.length);
+  document.getElementById('users-count').textContent = filtered.length ? `Mostrando ${start+1}–${end} de ${filtered.length} usuarios` : 'Sin resultados';
+  renderPagination('users-pagination', curUserPage, totalPages, p=>{curUserPage=p;renderUsers();});
+
+  document.getElementById('stat-total').textContent  = usersData.length;
+  document.getElementById('stat-active').textContent = usersData.filter(u=>u.status==='Activo').length;
+  document.getElementById('stat-admins').textContent = usersData.filter(u=>u.role==='ADMIN').length;
+}
+
+function filterRole(el, role) { userRoleFilter=role; curUserPage=1; document.querySelectorAll('#page-usuarios .filter-pill').forEach(b=>b.classList.remove('active')); el.classList.add('active'); renderUsers(); }
+function filterUsers() { curUserPage=1; renderUsers(); }
+
+function openAddUser() { document.getElementById('user-modal-title').textContent='NUEVO USUARIO'; document.getElementById('user-edit-id').value=''; document.getElementById('user-name').value=''; document.getElementById('user-email').value=''; document.getElementById('user-role').value='VIEWER'; document.getElementById('user-status').value='Activo'; openModal('user-modal'); }
+
+function editUser(id) {
+  const u = usersData.find(x=>x.id===id); if(!u) return;
+  document.getElementById('user-modal-title').textContent = 'EDITAR USUARIO';
+  document.getElementById('user-edit-id').value  = id;
+  document.getElementById('user-name').value     = u.name;
+  document.getElementById('user-email').value    = u.email;
+  document.getElementById('user-role').value     = u.role;
+  document.getElementById('user-status').value   = u.status;
+  openModal('user-modal');
+}
+
+function saveUser() {
+  const name=document.getElementById('user-name').value.trim(), email=document.getElementById('user-email').value.trim();
+  if(!name||!email){ showToast('Completá nombre y correo','warning'); return; }
+  const role=document.getElementById('user-role').value, status=document.getElementById('user-status').value;
+  const editId=document.getElementById('user-edit-id').value;
+  if(editId){ const u=usersData.find(x=>x.id==editId); if(u){u.name=name;u.email=email;u.role=role;u.status=status;} showToast('Usuario actualizado','check_circle'); }
+  else { usersData.push({id:userNextId++,name,email,role,status}); showToast('Usuario creado','person_add'); }
+  closeModal('user-modal'); renderUsers();
+}
+
+// ════════════════════════════════════════════════════
+// PLAYERS
+// ════════════════════════════════════════════════════
+function getFilteredPlayers() {
+  const q = (document.getElementById('player-search')?.value||'').toLowerCase();
+  return playersData.filter(p => {
+    const mp = playerPosFilter==='ALL' || (playerPosFilter==='G'&&p.pos_g==='G') || (playerPosFilter==='F'&&p.pos_g==='F') || (playerPosFilter==='C'&&p.pos_g==='C');
+    const mq = !q || p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q);
+    return mp && mq;
+  });
+}
+
+function renderPlayers() {
+  const filtered = getFilteredPlayers();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / playersPerPage));
+  if (curPlayerPage > totalPages) curPlayerPage = totalPages;
+  const start = (curPlayerPage-1)*playersPerPage;
+  const pageData = filtered.slice(start, start+playersPerPage);
+
+  document.getElementById('players-tbody').innerHTML = pageData.map((p,i)=>`
+    <tr>
+      <td style="color:#e2bfb6;">${start+i+1}</td>
+      <td style="font-weight:700;cursor:pointer;" onclick="viewPlayer(${p.id})" title="Ver detalle">${p.name}</td>
+      <td style="color:#e2bfb6;font-size:12px;">${p.team}</td>
+      <td><span style="font-size:11px;font-weight:700;letter-spacing:.06em;color:#c1c6da;">${p.pos}</span></td>
+      <td style="text-align:right;font-weight:700;">${p.ppg}</td>
+      <td style="text-align:right;color:#e2bfb6;">${p.rpg}</td>
+      <td style="text-align:right;color:#e2bfb6;">${p.apg}</td>
+      <td style="text-align:right;color:#ffb874;font-weight:700;">${p.per}</td>
+      <td style="text-align:right;color:#e2bfb6;">${p.ts}%</td>
+      <td>${statusBadge(p.status)}</td>
+      <td style="text-align:center;">
+        <div style="display:flex;gap:2px;justify-content:center;">
+          <button class="btn-icon" onclick="viewPlayer(${p.id})" title="Ver estadísticas"><span class="material-symbols-outlined" style="font-size:17px;">bar_chart</span></button>
+          <button class="btn-icon" onclick="editPlayer(${p.id})" title="Editar jugador"><span class="material-symbols-outlined" style="font-size:17px;">edit</span></button>
+          <button class="btn-icon danger" onclick="confirmDelete('player',${p.id},'${p.name.replace(/'/g,"\\'")}'')" title="Eliminar jugador"><span class="material-symbols-outlined" style="font-size:17px;">delete</span></button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  const end = Math.min(start+playersPerPage, filtered.length);
+  document.getElementById('players-count').textContent = filtered.length ? `Mostrando ${start+1}–${end} de ${filtered.length} jugadores` : 'Sin resultados';
+  renderPagination('players-pagination', curPlayerPage, totalPages, p=>{curPlayerPage=p;renderPlayers();});
+}
+
+function filterPos(el, pos) { playerPosFilter=pos; curPlayerPage=1; document.querySelectorAll('#page-jugadores .filter-pill').forEach(b=>b.classList.remove('active')); el.classList.add('active'); renderPlayers(); }
+function filterPlayers() { curPlayerPage=1; renderPlayers(); }
+
+function sortPlayers(by) {
+  const fn = {name:(a,b)=>a.name.localeCompare(b.name), team:(a,b)=>a.team.localeCompare(b.team), ppg:(a,b)=>b.ppg-a.ppg, per:(a,b)=>b.per-a.per};
+  if(fn[by]) playersData.sort(fn[by]);
+  renderPlayers();
+}
+
+function openAddPlayer() { document.getElementById('player-modal-title').textContent='NUEVO JUGADOR'; document.getElementById('player-edit-id').value=''; ['p-name','p-team','p-ppg','p-rpg','p-apg','p-per','p-ts'].forEach(id=>document.getElementById(id).value=''); document.getElementById('p-pos').value='PG'; document.getElementById('p-status').value='Activo'; openModal('player-modal'); }
+
+function editPlayer(id) {
+  const p=playersData.find(x=>x.id===id); if(!p) return;
+  document.getElementById('player-modal-title').textContent='EDITAR JUGADOR';
+  document.getElementById('player-edit-id').value=id;
+  document.getElementById('p-name').value=p.name; document.getElementById('p-team').value=p.team;
+  document.getElementById('p-pos').value=p.pos;   document.getElementById('p-ppg').value=p.ppg;
+  document.getElementById('p-rpg').value=p.rpg;   document.getElementById('p-apg').value=p.apg;
+  document.getElementById('p-per').value=p.per;   document.getElementById('p-ts').value=p.ts;
+  document.getElementById('p-status').value=p.status;
+  openModal('player-modal');
+}
+
+function savePlayer() {
+  const name=document.getElementById('p-name').value.trim(), team=document.getElementById('p-team').value.trim();
+  if(!name||!team){ showToast('Completá nombre y equipo','warning'); return; }
+  const pos=document.getElementById('p-pos').value;
+  const posG={'PG':'G','SG':'G','SF':'F','PF':'F','C':'C'}[pos];
+  const d = { pos, pos_g:posG, ppg:+document.getElementById('p-ppg').value||0, rpg:+document.getElementById('p-rpg').value||0, apg:+document.getElementById('p-apg').value||0, per:+document.getElementById('p-per').value||0, ts:+document.getElementById('p-ts').value||0, status:document.getElementById('p-status').value };
+  const editId=document.getElementById('player-edit-id').value;
+  if(editId){ const p=playersData.find(x=>x.id==editId); if(p) Object.assign(p,{name,team,...d}); showToast('Jugador actualizado','check_circle'); }
+  else { playersData.push({id:playerNextId++,name,team,...d}); showToast('Jugador agregado','sports_basketball'); }
+  closeModal('player-modal'); renderPlayers();
+}
+
+function viewPlayer(id) {
+  const p=playersData.find(x=>x.id===id); if(!p) return;
+  document.getElementById('pd-title').textContent=p.name.toUpperCase();
+  document.getElementById('pd-content').innerHTML=`
+    <div style="margin-bottom:14px;">
+      <span style="font-size:13px;color:#e2bfb6;">${p.team} · ${p.pos}</span>
+      &nbsp;&nbsp;${statusBadge(p.status)}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      ${[['PPG',p.ppg,'#ffb874'],['RPG',p.rpg,'#c1c6da'],['APG',p.apg,'#c1c6da'],['PER',p.per,'#e8512a'],['TS%',p.ts+'%','#e2e2e8'],['Pos',p.pos,'#c1c6da']].map(([l,v,c])=>`
+        <div style="background:#1a1c20;border:1px solid #5a413a;border-radius:8px;padding:12px;text-align:center;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.07em;color:#e2bfb6;text-transform:uppercase;margin-bottom:3px;">${l}</div>
+          <div style="font-family:'Bebas Neue';font-size:26px;color:${c};line-height:1;">${v}</div>
+        </div>`).join('')}
+    </div>`;
+  document.getElementById('pd-edit-btn').onclick = ()=>{ closeModal('player-detail-modal'); editPlayer(id); };
+  openModal('player-detail-modal');
+}
+
+function exportPlayers() {
+  const rows=[['Nombre','Equipo','Pos','PPG','RPG','APG','PER','TS%','Estado'],...playersData.map(p=>[p.name,p.team,p.pos,p.ppg,p.rpg,p.apg,p.per,p.ts+'%',p.status])];
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download='jugadores_nba_2024-25.csv'; a.click();
+  showToast('Exportando CSV…','download');
+}
+
+// ════════════════════════════════════════════════════
+// DELETE
+// ════════════════════════════════════════════════════
+function confirmDelete(type, id, name) {
+  pendingDelete={type,id};
+  document.getElementById('confirm-msg').textContent=`¿Eliminar a "${name}"? Esta acción no se puede deshacer.`;
+  openModal('confirm-modal');
+}
+function executeDelete() {
+  if(!pendingDelete) return;
+  const {type,id}=pendingDelete;
+  if(type==='user')   { usersData=usersData.filter(u=>u.id!==id); renderUsers(); showToast('Usuario eliminado','delete'); }
+  if(type==='player') { playersData=playersData.filter(p=>p.id!==id); renderPlayers(); showToast('Jugador eliminado','delete'); }
+  pendingDelete=null; closeModal('confirm-modal');
+}
+
+// ════════════════════════════════════════════════════
+// PAGINATION
+// ════════════════════════════════════════════════════
+function renderPagination(cid, cur, total, cb) {
+  const el=document.getElementById(cid); if(!el) return;
+  const btn=(lbl,page,disabled,active)=>`<button class="page-btn${active?' active':''}" ${disabled?'disabled':''} onclick="(${cb.toString()})(${page})">${lbl}</button>`;
+  let h = btn('<span class="material-symbols-outlined" style="font-size:15px;">chevron_left</span>', cur-1, cur<=1, false);
+  for(let i=1;i<=total;i++){
+    if(total>7 && i>2 && i<total-1 && Math.abs(i-cur)>1){ if(i===3||i===total-2) h+=`<span class="page-btn" style="cursor:default;pointer-events:none;">…</span>`; continue; }
+    h+=btn(i, i, false, i===cur);
+  }
+  h+=btn('<span class="material-symbols-outlined" style="font-size:15px;">chevron_right</span>', cur+1, cur>=total, false);
+  el.innerHTML=h;
+}
+
+// ════════════════════════════════════════════════════
+// DASHBOARD CHARTS
+// ════════════════════════════════════════════════════
+function initCharts() {
+  // 3PT% NBA real data per season
+  const v3 = [35.8, 36.7, 35.3, 37.0, 37.5, 38.2];
+  const m3 = Math.max(...v3);
+  document.getElementById('chart-3pt').innerHTML = v3.map((v,i)=>`<div class="bar" title="${v}%" style="height:${(v/m3)*100}%;flex:1;${i===v3.length-1?'background:#e8512a;':''}"></div>`).join('');
+
+  // PPG real data
+  const vp = [111.8,112.1,110.6,114.7,113.9,114.8];
+  const mp = Math.max(...vp), minp = Math.min(...vp)-2;
+  document.getElementById('chart-ppg').innerHTML = vp.map((v,i)=>`<div class="bar" title="${v}" style="height:${((v-minp)/(mp-minp))*100}%;flex:1;${i===vp.length-1?'background:#e8512a;':''}"></div>`).join('');
+
+  // PER leaders
+  const leaders = playersData.slice().sort((a,b)=>b.per-a.per).slice(0,5);
+  document.getElementById('per-list').innerHTML = leaders.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-family:'Bebas Neue';font-size:15px;color:${i===0?'#e8512a':'#e2bfb6'};width:14px;text-align:right;">${i+1}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+        <div style="height:3px;background:#333539;border-radius:2px;margin-top:3px;">
+          <div style="height:100%;width:${(p.per/35)*100}%;background:${i===0?'#e8512a':'#ffb874'};border-radius:2px;transition:width .8s;"></div>
+        </div>
+      </div>
+      <span style="font-family:'Bebas Neue';font-size:18px;color:#ffb874;flex-shrink:0;">${p.per}</span>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════
+// TABLEAU
+// ════════════════════════════════════════════════════
+const tBase = 'https://public.tableau.com/views/AppNBA2/';
+const tParams = '?:embed=y&:showVizHome=no&:tabs=no&:toolbar=bottom&:animate_transition=yes';
+const tUrls = {
+  hoja1:tBase+'Hoja1'+tParams, hoja2:tBase+'Hoja2'+tParams,
+  hoja3:tBase+'Hoja3'+tParams, hoja4:tBase+'Hoja4'+tParams,
+  hoja5:tBase+'Hoja5'+tParams, dash1:tBase+'Dashboard1'+tParams,
+  dash2:tBase+'Dashboard2'+tParams, dash3:tBase+'Dashboard3'+tParams,
+};
+
+function selectTab(el, key, label) {
+  document.querySelectorAll('#tableau-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('current-tab-label').textContent = label;
+  document.getElementById('tableau-frame').src = tUrls[key] || tUrls.dash1;
+}
+
+function toggleFullscreen() {
+  const el=document.getElementById('tableau-card');
+  if(!document.fullscreenElement) el.requestFullscreen?.().catch(()=>{});
+  else document.exitFullscreen?.();
+}
+
+function openTableauPublic() {
+  window.open('https://public.tableau.com/app/profile/eduardo.d.negri/viz/AppNBA2/', '_blank');
+}
+
+// ════════════════════════════════════════════════════
+// GLOBAL SEARCH
+// ════════════════════════════════════════════════════
+function handleSearch(q) {
+  if(!q) return;
+  const ql=q.toLowerCase();
+  if(playersData.some(p=>p.name.toLowerCase().includes(ql)||p.team.toLowerCase().includes(ql))) {
+    navigate('jugadores'); document.getElementById('player-search').value=q; filterPlayers();
+  } else if(usersData.some(u=>u.name.toLowerCase().includes(ql)||u.email.toLowerCase().includes(ql))) {
+    navigate('usuarios'); document.getElementById('user-search').value=q; filterUsers();
+  } else { showToast('Sin resultados para "'+q+'"','search'); }
+}
+
+// ════════════════════════════════════════════════════
+// RESPONSIVE KPI grid
+// ════════════════════════════════════════════════════
+function adjustKpiGrid() {
+  const g=document.getElementById('kpi-grid');
+  if(g) g.style.gridTemplateColumns = window.innerWidth<640 ? 'repeat(2,1fr)' : 'repeat(4,1fr)';
+}
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts(); renderUsers(); renderPlayers(); adjustKpiGrid();
+  window.addEventListener('resize', adjustKpiGrid);
+  // Fullscreen label update
+  document.addEventListener('fullscreenchange', ()=>{
+    const ic=document.querySelector('#tableau-card button[onclick="toggleFullscreen()"] .material-symbols-outlined');
+    if(ic) ic.textContent = document.fullscreenElement ? 'fullscreen_exit' : 'fullscreen';
+  });
+});
+</script>
+</body>
+</html>
