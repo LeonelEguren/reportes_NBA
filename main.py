@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine, Float, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
@@ -130,6 +131,15 @@ def get_db():
 # APLICACIÓN Y ENDPOINTS
 # ==========================================
 app = FastAPI(title="NBA Predictor API")
+
+# ✅ CORS MIDDLEWARE - Permite peticiones desde el navegador
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción: especificar orígenes
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # RF-01: Creación de Cuenta (Hashear)
