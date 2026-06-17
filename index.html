@@ -1,696 +1,1419 @@
 <!DOCTYPE html>
 <html lang="es" class="dark">
+
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>NBA Analytics</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-<style>
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body { font-family: 'Inter', sans-serif; background: #0c0e12; color: #e2e2e8; margin: 0; overflow-x: hidden; }
-.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; vertical-align: middle; line-height:1; }
-.fill-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NBA Analytics</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-/* ── LAYOUT ── */
-#sidebar { position:fixed; left:0; top:0; height:100%; width:260px; background:#111318; border-right:1px solid #5a413a; display:flex; flex-direction:column; z-index:50; transition:transform .3s ease; }
-#sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:40; }
-#main-wrapper { margin-left:260px; min-height:100vh; display:flex; flex-direction:column; }
-#topnav { position:sticky; top:0; z-index:30; background:#111318; border-bottom:1px solid #5a413a; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-.page { display:none; flex:1; }
-.page.active { display:flex; flex-direction:column; }
-.page-inner { padding:24px; flex:1; display:flex; flex-direction:column; }
+    html,
+    body {
+      height: 100%;
+    }
 
-/* ── SIDEBAR NAV ── */
-.nav-link { display:flex; align-items:center; gap:14px; padding:10px 16px; border-left:3px solid transparent; color:#e2bfb6; font-size:13px; font-weight:600; letter-spacing:.05em; text-decoration:none; transition:all .2s; cursor:pointer; border-radius:0 8px 8px 0; margin-right:8px; }
-.nav-link:hover { background:#1e2024; color:#e2e2e8; }
-.nav-link.active { border-left-color:#ffb874; background:rgba(255,184,116,.1); color:#e2e2e8; }
-.nav-link.active .nav-icon { color:#ffb874; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0c0e12;
+      color: #e2e2e8;
+      margin: 0;
+      overflow-x: hidden;
+    }
 
-/* ── STAT CARDS ── */
-.stat-card { background:#111318; border:1px solid #5a413a; border-radius:12px; padding:16px; position:relative; overflow:hidden; transition:border-color .2s, transform .15s; }
-.stat-card:hover { border-color:#ffb874; transform:translateY(-1px); }
-.stat-card .corner { position:absolute; right:-16px; top:-16px; width:64px; height:64px; background:#1e2024; border-radius:0 0 0 100%; opacity:.6; }
-.stat-value { font-family:'Bebas Neue'; font-size:40px; line-height:1; }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+      line-height: 1;
+    }
 
-/* ── TABLES ── */
-.data-table { width:100%; border-collapse:collapse; }
-.data-table th { padding:11px 14px; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#e2bfb6; background:#0c0e12; border-bottom:1px solid #5a413a; text-align:left; white-space:nowrap; }
-.data-table td { padding:11px 14px; border-bottom:1px solid rgba(90,65,58,.4); font-size:13px; }
-.data-table tbody tr:hover td { background:#1a1c20; }
-.data-table tbody tr:last-child td { border-bottom:none; }
+    .fill-icon {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
 
-/* ── BADGES ── */
-.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
-.badge-admin   { background:rgba(255,184,116,.12); border:1px solid rgba(255,184,116,.3); color:#ffb874; }
-.badge-viewer  { background:#1e2024; border:1px solid #5a413a; color:#e2bfb6; }
-.badge-analyst { background:rgba(193,198,218,.1); border:1px solid rgba(193,198,218,.3); color:#c1c6da; }
-.badge-active  { background:#1e2024; border:1px solid #5a413a; color:#e2e2e8; }
-.badge-inactive{ background:#0c0e12; border:1px solid #5a413a; color:#e2bfb6; opacity:.6; }
-.badge-injured { background:rgba(255,180,171,.12); border:1px solid rgba(255,180,171,.3); color:#ffb4ab; }
+    /* ── LAYOUT ── */
+    #sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 260px;
+      background: #111318;
+      border-right: 1px solid #5a413a;
+      display: flex;
+      flex-direction: column;
+      z-index: 50;
+      transition: transform .3s ease;
+    }
 
-/* ── BUTTONS ── */
-.btn-primary   { background:#e8512a; color:#fff; font-size:13px; font-weight:600; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all .2s; letter-spacing:.02em; }
-.btn-primary:hover { background:#f95d35; box-shadow:0 0 12px rgba(232,81,42,.35); }
-.btn-secondary { background:transparent; color:#e2e2e8; font-size:13px; font-weight:600; padding:8px 16px; border-radius:8px; border:1px solid #5a413a; cursor:pointer; display:inline-flex; align-items:center; gap:7px; transition:all .2s; }
-.btn-secondary:hover { background:#1e2024; border-color:#aa8982; }
-.btn-icon { background:transparent; border:none; cursor:pointer; color:#e2bfb6; padding:5px; border-radius:6px; transition:all .15s; display:inline-flex; align-items:center; justify-content:center; }
-.btn-icon:hover { color:#ffb874; background:#1e2024; }
-.btn-icon.danger:hover { color:#ffb4ab; background:rgba(255,180,171,.1); }
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .75);
+      z-index: 40;
+    }
 
-/* ── SEARCH ── */
-.search-box { background:#1a1c20; border:1px solid #5a413a; border-radius:9999px; display:flex; align-items:center; padding:7px 14px; gap:8px; transition:border-color .2s; }
-.search-box:focus-within { border-color:#ffb874; }
-.search-box input { background:transparent; border:none; outline:none; color:#e2e2e8; font-size:13px; }
-.search-box input::placeholder { color:#e2bfb6; opacity:.6; }
+    #main-wrapper {
+      margin-left: 260px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-/* ── TABS (topnav) ── */
-.nav-tab { padding:6px 14px; border-radius:6px; font-size:13px; font-weight:600; letter-spacing:.04em; border:1px solid transparent; background:transparent; color:#e2bfb6; cursor:pointer; transition:all .2s; }
-.nav-tab:hover { background:#1e2024; color:#e2e2e8; }
-.nav-tab.active { color:#ffb874; border-bottom:2px solid #ffb874; border-radius:0; padding-bottom:5px; }
+    #topnav {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: #111318;
+      border-bottom: 1px solid #5a413a;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
 
-/* ── TABLEAU TABS ── */
-.tableau-tabs { display:flex; gap:4px; flex-wrap:wrap; }
-.tab-btn { padding:6px 13px; border-radius:6px; font-size:12px; font-weight:600; letter-spacing:.04em; border:1px solid #5a413a; background:transparent; color:#e2bfb6; cursor:pointer; transition:all .2s; white-space:nowrap; }
-.tab-btn.active { background:#ffb874; color:#4b2800; border-color:#ffb874; }
-.tab-btn:hover:not(.active) { background:#1e2024; color:#e2e2e8; }
+    .page {
+      display: none;
+      flex: 1;
+    }
 
-/* ── TABLEAU IFRAME WRAPPER ── */
-#tableau-wrapper {
-  position: relative;
-  width: 100%;
-  min-height: 520px;
-  height: calc(100vh - 290px);
-  max-height: 900px;
-  background: #0c0e12;
-  overflow: hidden;
-}
-#tableau-wrapper iframe {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-  display: block;
-}
-/* Fullscreen override */
-#tableau-card:fullscreen #tableau-wrapper,
-#tableau-card:-webkit-full-screen #tableau-wrapper {
-  height: 100vh;
-  max-height: none;
-}
+    .page.active {
+      display: flex;
+      flex-direction: column;
+    }
 
-/* ── MODAL ── */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:100; align-items:center; justify-content:center; padding:16px; }
-.modal-overlay.open { display:flex; }
-.modal { background:#1e2024; border:1px solid #5a413a; border-radius:16px; padding:24px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; }
-.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-.modal-title { font-family:'Bebas Neue'; font-size:26px; color:#e2e2e8; letter-spacing:.03em; }
+    .page-inner {
+      padding: 24px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
 
-/* ── FORM ── */
-.form-group { margin-bottom:14px; }
-.form-label { display:block; font-size:11px; font-weight:600; letter-spacing:.06em; color:#e2bfb6; margin-bottom:5px; text-transform:uppercase; }
-.form-input  { width:100%; background:#1a1c20; border:1px solid #5a413a; border-radius:8px; padding:9px 12px; color:#e2e2e8; font-size:13px; outline:none; transition:border-color .2s; font-family:'Inter',sans-serif; }
-.form-input:focus  { border-color:#ffb874; box-shadow:0 0 0 3px rgba(255,184,116,.12); }
-.form-select { width:100%; background:#1a1c20; border:1px solid #5a413a; border-radius:8px; padding:9px 12px; color:#e2e2e8; font-size:13px; outline:none; appearance:none; cursor:pointer; font-family:'Inter',sans-serif; }
-.form-select:focus { border-color:#ffb874; }
+    /* ── SIDEBAR NAV ── */
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 16px;
+      border-left: 3px solid transparent;
+      color: #e2bfb6;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-decoration: none;
+      transition: all .2s;
+      cursor: pointer;
+      border-radius: 0 8px 8px 0;
+      margin-right: 8px;
+    }
 
-/* ── PAGINATION ── */
-.pagination { display:flex; gap:3px; align-items:center; }
-.page-btn { background:transparent; border:none; color:#e2bfb6; padding:5px 9px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:500; transition:all .15s; line-height:1.4; }
-.page-btn:hover { background:#333539; color:#e2e2e8; }
-.page-btn.active { background:#333539; color:#e2e2e8; font-weight:700; }
-.page-btn:disabled { opacity:.35; cursor:not-allowed; }
+    .nav-link:hover {
+      background: #1e2024;
+      color: #e2e2e8;
+    }
 
-/* ── MINI CHARTS ── */
-.bar-chart { display:flex; align-items:flex-end; gap:3px; height:72px; }
-.bar { background:#ffb874; border-radius:3px 3px 0 0; transition:height .7s ease, background .2s; min-width:8px; cursor:default; }
-.bar:hover { background:#e8512a; }
+    .nav-link.active {
+      border-left-color: #ffb874;
+      background: rgba(255, 184, 116, .1);
+      color: #e2e2e8;
+    }
 
-/* ── FILTER PILLS ── */
-.filter-pill { padding:5px 13px; border-radius:9999px; font-size:12px; font-weight:600; letter-spacing:.04em; border:1px solid #5a413a; background:transparent; color:#e2bfb6; cursor:pointer; transition:all .2s; white-space:nowrap; }
-.filter-pill.active { background:rgba(255,184,116,.15); border-color:#ffb874; color:#ffb874; }
-.filter-pill:hover:not(.active) { background:#1e2024; color:#e2e2e8; }
+    .nav-link.active .nav-icon {
+      color: #ffb874;
+    }
 
-/* ── TOAST ── */
-#toast { position:fixed; bottom:24px; right:24px; background:#1e2024; border:1px solid #5a413a; border-radius:10px; padding:11px 18px; display:flex; align-items:center; gap:10px; font-size:13px; color:#e2e2e8; z-index:200; transform:translateY(80px); opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1); pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,.4); }
-#toast.show { transform:translateY(0); opacity:1; }
-#toast .t-icon { color:#ffb874; }
+    /* ── STAT CARDS ── */
+    .stat-card {
+      background: #111318;
+      border: 1px solid #5a413a;
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .2s, transform .15s;
+    }
 
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar { width:5px; height:5px; }
-::-webkit-scrollbar-track { background:#111318; }
-::-webkit-scrollbar-thumb { background:#5a413a; border-radius:3px; }
-::-webkit-scrollbar-thumb:hover { background:#aa8982; }
+    .stat-card:hover {
+      border-color: #ffb874;
+      transform: translateY(-1px);
+    }
 
-/* ── TYPOGRAPHY ── */
-.section-title { font-family:'Bebas Neue'; font-size:30px; letter-spacing:.04em; color:#e2e2e8; line-height:1; }
-.section-sub { color:#e2bfb6; font-size:13px; margin-top:4px; }
+    .stat-card .corner {
+      position: absolute;
+      right: -16px;
+      top: -16px;
+      width: 64px;
+      height: 64px;
+      background: #1e2024;
+      border-radius: 0 0 0 100%;
+      opacity: .6;
+    }
 
-/* ── PULSE DOT ── */
-@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.35} }
-.pulse { animation:pulse-dot 2s infinite; }
+    .stat-value {
+      font-family: 'Bebas Neue';
+      font-size: 40px;
+      line-height: 1;
+    }
 
-/* ── MOBILE ── */
-#hamburger { display:none; }
-@media (max-width:767px) {
-  #sidebar { transform:translateX(-100%); }
-  #sidebar.open { transform:translateX(0); }
-  #sidebar-overlay.open { display:block; }
-  #main-wrapper { margin-left:0; }
-  #hamburger { display:flex; }
-  .hide-mob { display:none !important; }
-  .data-table th:nth-child(3), .data-table td:nth-child(3) { display:none; }
-  .modal { padding:18px; }
-  #tableau-wrapper { min-height:340px; height:calc(100vh - 240px); }
-  .page-inner { padding:16px; }
-}
-@media (max-width:480px) {
-  .data-table th:nth-child(5),.data-table td:nth-child(5),
-  .data-table th:nth-child(6),.data-table td:nth-child(6) { display:none; }
-}
-</style>
+    /* ── TABLES ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th {
+      padding: 11px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #e2bfb6;
+      background: #0c0e12;
+      border-bottom: 1px solid #5a413a;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .data-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(90, 65, 58, .4);
+      font-size: 13px;
+    }
+
+    .data-table tbody tr:hover td {
+      background: #1a1c20;
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-admin {
+      background: rgba(255, 184, 116, .12);
+      border: 1px solid rgba(255, 184, 116, .3);
+      color: #ffb874;
+    }
+
+    .badge-viewer {
+      background: #1e2024;
+      border: 1px solid #5a413a;
+      color: #e2bfb6;
+    }
+
+    .badge-analyst {
+      background: rgba(193, 198, 218, .1);
+      border: 1px solid rgba(193, 198, 218, .3);
+      color: #c1c6da;
+    }
+
+    .badge-active {
+      background: #1e2024;
+      border: 1px solid #5a413a;
+      color: #e2e2e8;
+    }
+
+    .badge-inactive {
+      background: #0c0e12;
+      border: 1px solid #5a413a;
+      color: #e2bfb6;
+      opacity: .6;
+    }
+
+    .badge-injured {
+      background: rgba(255, 180, 171, .12);
+      border: 1px solid rgba(255, 180, 171, .3);
+      color: #ffb4ab;
+    }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      background: #e8512a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all .2s;
+      letter-spacing: .02em;
+    }
+
+    .btn-primary:hover {
+      background: #f95d35;
+      box-shadow: 0 0 12px rgba(232, 81, 42, .35);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #e2e2e8;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #5a413a;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all .2s;
+    }
+
+    .btn-secondary:hover {
+      background: #1e2024;
+      border-color: #aa8982;
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #e2bfb6;
+      padding: 5px;
+      border-radius: 6px;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-icon:hover {
+      color: #ffb874;
+      background: #1e2024;
+    }
+
+    .btn-icon.danger:hover {
+      color: #ffb4ab;
+      background: rgba(255, 180, 171, .1);
+    }
+
+    /* ── SEARCH ── */
+    .search-box {
+      background: #1a1c20;
+      border: 1px solid #5a413a;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      padding: 7px 14px;
+      gap: 8px;
+      transition: border-color .2s;
+    }
+
+    .search-box:focus-within {
+      border-color: #ffb874;
+    }
+
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e2e2e8;
+      font-size: 13px;
+    }
+
+    .search-box input::placeholder {
+      color: #e2bfb6;
+      opacity: .6;
+    }
+
+    /* ── TABS (topnav) ── */
+    .nav-tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #e2bfb6;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .nav-tab:hover {
+      background: #1e2024;
+      color: #e2e2e8;
+    }
+
+    .nav-tab.active {
+      color: #ffb874;
+      border-bottom: 2px solid #ffb874;
+      border-radius: 0;
+      padding-bottom: 5px;
+    }
+
+    /* ── TABLEAU TABS ── */
+    .tableau-tabs {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 6px 13px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      border: 1px solid #5a413a;
+      background: transparent;
+      color: #e2bfb6;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: #ffb874;
+      color: #4b2800;
+      border-color: #ffb874;
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: #1e2024;
+      color: #e2e2e8;
+    }
+
+    /* ── TABLEAU IFRAME WRAPPER ── */
+    #tableau-wrapper {
+      position: relative;
+      width: 100%;
+      min-height: 520px;
+      height: calc(100vh - 290px);
+      max-height: 900px;
+      background: #0c0e12;
+      overflow: hidden;
+    }
+
+    #tableau-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* Fullscreen override */
+    #tableau-card:fullscreen #tableau-wrapper,
+    #tableau-card:-webkit-full-screen #tableau-wrapper {
+      height: 100vh;
+      max-height: none;
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .85);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #1e2024;
+      border: 1px solid #5a413a;
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-family: 'Bebas Neue';
+      font-size: 26px;
+      color: #e2e2e8;
+      letter-spacing: .03em;
+    }
+
+    /* ── FORM ── */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      color: #e2bfb6;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .form-input {
+      width: 100%;
+      background: #1a1c20;
+      border: 1px solid #5a413a;
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #e2e2e8;
+      font-size: 13px;
+      outline: none;
+      transition: border-color .2s;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .form-input:focus {
+      border-color: #ffb874;
+      box-shadow: 0 0 0 3px rgba(255, 184, 116, .12);
+    }
+
+    .form-select {
+      width: 100%;
+      background: #1a1c20;
+      border: 1px solid #5a413a;
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #e2e2e8;
+      font-size: 13px;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .form-select:focus {
+      border-color: #ffb874;
+    }
+
+    /* ── PAGINATION ── */
+    .pagination {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .page-btn {
+      background: transparent;
+      border: none;
+      color: #e2bfb6;
+      padding: 5px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all .15s;
+      line-height: 1.4;
+    }
+
+    .page-btn:hover {
+      background: #333539;
+      color: #e2e2e8;
+    }
+
+    .page-btn.active {
+      background: #333539;
+      color: #e2e2e8;
+      font-weight: 700;
+    }
+
+    .page-btn:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
+
+    /* ── MINI CHARTS ── */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 72px;
+    }
+
+    .bar {
+      background: #ffb874;
+      border-radius: 3px 3px 0 0;
+      transition: height .7s ease, background .2s;
+      min-width: 8px;
+      cursor: default;
+    }
+
+    .bar:hover {
+      background: #e8512a;
+    }
+
+    /* ── FILTER PILLS ── */
+    .filter-pill {
+      padding: 5px 13px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      border: 1px solid #5a413a;
+      background: transparent;
+      color: #e2bfb6;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+
+    .filter-pill.active {
+      background: rgba(255, 184, 116, .15);
+      border-color: #ffb874;
+      color: #ffb874;
+    }
+
+    .filter-pill:hover:not(.active) {
+      background: #1e2024;
+      color: #e2e2e8;
+    }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e2024;
+      border: 1px solid #5a413a;
+      border-radius: 10px;
+      padding: 11px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #e2e2e8;
+      z-index: 200;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all .3s cubic-bezier(.34, 1.56, .64, 1);
+      pointer-events: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #toast .t-icon {
+      color: #ffb874;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #111318;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #5a413a;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #aa8982;
+    }
+
+    /* ── TYPOGRAPHY ── */
+    .section-title {
+      font-family: 'Bebas Neue';
+      font-size: 30px;
+      letter-spacing: .04em;
+      color: #e2e2e8;
+      line-height: 1;
+    }
+
+    .section-sub {
+      color: #e2bfb6;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    /* ── PULSE DOT ── */
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .35
+      }
+    }
+
+    .pulse {
+      animation: pulse-dot 2s infinite;
+    }
+
+    /* ── MOBILE ── */
+    #hamburger {
+      display: none;
+    }
+
+    @media (max-width:767px) {
+      #sidebar {
+        transform: translateX(-100%);
+      }
+
+      #sidebar.open {
+        transform: translateX(0);
+      }
+
+      #sidebar-overlay.open {
+        display: block;
+      }
+
+      #main-wrapper {
+        margin-left: 0;
+      }
+
+      #hamburger {
+        display: flex;
+      }
+
+      .hide-mob {
+        display: none !important;
+      }
+
+      .data-table th:nth-child(3),
+      .data-table td:nth-child(3) {
+        display: none;
+      }
+
+      .modal {
+        padding: 18px;
+      }
+
+      #tableau-wrapper {
+        min-height: 340px;
+        height: calc(100vh - 240px);
+      }
+
+      .page-inner {
+        padding: 16px;
+      }
+    }
+
+    @media (max-width:480px) {
+
+      .data-table th:nth-child(5),
+      .data-table td:nth-child(5),
+      .data-table th:nth-child(6),
+      .data-table td:nth-child(6) {
+        display: none;
+      }
+    }
+    /* ── SPIN ANIMATION (btn loading) ── */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+  </style>
 </head>
 
 <body>
 
-<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
-<aside id="sidebar">
-  <div style="padding:20px 20px 12px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
-      <div style="width:32px;height:32px;background:#e8512a;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span class="material-symbols-outlined fill-icon" style="color:#fff;font-size:19px;">sports_basketball</span>
-      </div>
-      <h2 style="font-family:'Bebas Neue';font-size:21px;color:#ffb874;letter-spacing:.06em;line-height:1;">NBA ANALYTICS</h2>
-    </div>
-  </div>
-
-  <div style="height:1px;background:#5a413a;margin:0 16px 10px;"></div>
-
-  <nav style="flex:1;display:flex;flex-direction:column;gap:2px;padding:0 4px;">
-    <a class="nav-link active" onclick="navigate('dashboard')" id="nav-dashboard">
-      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">dashboard</span>
-      <span>Dashboard</span>
-    </a>
-    <a class="nav-link" onclick="navigate('jugadores')" id="nav-jugadores">
-      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">directions_run</span>
-      <span>Jugadores</span>
-    </a>
-    <a class="nav-link" onclick="navigate('usuarios')" id="nav-usuarios">
-      <span class="material-symbols-outlined nav-icon" style="font-size:20px;">manage_accounts</span>
-      <span>Usuarios</span>
-    </a>
-  </nav>
-
-  <div style="padding:12px 16px;border-top:1px solid #5a413a;">
-    <div style="display:flex;align-items:center;gap:8px;color:#e2bfb6;font-size:11px;opacity:.7;">
-      <span class="material-symbols-outlined" style="font-size:15px;">info</span>
-      <span>Grupo 1</span>
-    </div>
-  </div>
-</aside>
-
-<div id="main-wrapper">
-
-  <nav id="topnav">
-    <div style="display:flex;align-items:center;gap:14px;">
-      <button id="hamburger" onclick="toggleSidebar()" style="background:transparent;border:none;cursor:pointer;color:#e2bfb6;padding:4px;" aria-label="Menu">
-        <span class="material-symbols-outlined">menu</span>
-      </button>
-      <span style="font-family:'Bebas Neue';font-size:22px;color:#ffb874;letter-spacing:.06em;" class="hide-mob">NBA ANALYTICS</span>
-      <div style="display:flex;gap:2px;margin-left:4px;" class="hide-mob">
-        <button class="nav-tab active" onclick="navigate('dashboard')" id="tnav-dashboard">Visualización</button>
-        <button class="nav-tab" onclick="navigate('usuarios')" id="tnav-gestion">Gestión</button>
+  <aside id="sidebar">
+    <div style="padding:20px 20px 12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:3px;">
+        <div
+          style="width:32px;height:32px;background:#e8512a;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="material-symbols-outlined fill-icon" style="color:#fff;font-size:19px;">sports_basketball</span>
+        </div>
+        <h2 style="font-family:'Bebas Neue';font-size:21px;color:#ffb874;letter-spacing:.06em;line-height:1;">NBA
+          ANALYTICS</h2>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div class="search-box hide-mob" style="width:200px;">
-        <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
-        <input type="text" placeholder="Buscar..." id="global-search" oninput="handleSearch(this.value)" style="width:140px;"/>
-      </div>
-      <button class="btn-icon" onclick="showToast('Sin notificaciones nuevas','notifications')" title="Notificaciones">
-        <span class="material-symbols-outlined fill-icon" style="font-size:21px;">notifications</span>
-      </button>
-      <button class="btn-icon" onclick="openModal('settings-modal')" title="Configuración">
-        <span class="material-symbols-outlined">settings</span>
-      </button>
 
-      <div id="auth-container" class="relative">
-        <button id="btn-login-header" class="btn-primary" onclick="mostrarLoginEnModal()">
-          <span class="material-symbols-outlined">login</span>
-          <span>Iniciar Sesión</span>
+    <div style="height:1px;background:#5a413a;margin:0 16px 10px;"></div>
+
+    <nav style="flex:1;display:flex;flex-direction:column;gap:2px;padding:0 4px;">
+      <a class="nav-link active" onclick="navigate('dashboard')" id="nav-dashboard">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">dashboard</span>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-link" onclick="navigate('jugadores')" id="nav-jugadores">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">directions_run</span>
+        <span>Jugadores</span>
+      </a>
+      <a class="nav-link" onclick="navigate('usuarios')" id="nav-usuarios">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">manage_accounts</span>
+        <span>Usuarios</span>
+      </a>
+      <a class="nav-link" onclick="navigate('pronostico')" id="nav-pronostico">
+        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">query_stats</span>
+        <span>Generar Pronóstico</span>
+      </a>
+    </nav>
+
+    <div style="padding:12px 16px;border-top:1px solid #5a413a;">
+      <div style="display:flex;align-items:center;gap:8px;color:#e2bfb6;font-size:11px;opacity:.7;">
+        <span class="material-symbols-outlined" style="font-size:15px;">info</span>
+        <span>Grupo 1</span>
+      </div>
+    </div>
+  </aside>
+
+  <div id="main-wrapper">
+
+    <nav id="topnav">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button id="hamburger" onclick="toggleSidebar()"
+          style="background:transparent;border:none;cursor:pointer;color:#e2bfb6;padding:4px;" aria-label="Menu">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <span style="font-family:'Bebas Neue';font-size:22px;color:#ffb874;letter-spacing:.06em;" class="hide-mob">NBA
+          ANALYTICS</span>
+        <div style="display:flex;gap:2px;margin-left:4px;" class="hide-mob">
+          <button class="nav-tab active" onclick="navigate('dashboard')" id="tnav-dashboard">Visualización</button>
+          <button class="nav-tab" onclick="navigate('usuarios')" id="tnav-gestion">Gestión</button>
+          <button class="nav-tab" onclick="navigate('pronostico')" id="tnav-pronostico">Pronóstico</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="search-box hide-mob" style="width:200px;">
+          <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
+          <input type="text" placeholder="Buscar..." id="global-search" oninput="handleSearch(this.value)"
+            style="width:140px;" />
+        </div>
+        <button class="btn-icon" onclick="showToast('Sin notificaciones nuevas','notifications')"
+          title="Notificaciones">
+          <span class="material-symbols-outlined fill-icon" style="font-size:21px;">notifications</span>
+        </button>
+        <button class="btn-icon" onclick="openModal('settings-modal')" title="Configuración">
+          <span class="material-symbols-outlined">settings</span>
         </button>
 
-        <div id="user-profile-menu" class="hidden flex-col items-center relative">
-          <div style="width:36px;height:36px;border-radius:50%;background:#1a1c20;border:2px solid #5a413a;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="toggleLogoutMenu()">
-            <span class="material-symbols-outlined fill-icon" style="color:#ffb874;font-size:22px;">account_circle</span>
-          </div>
-          <div id="logout-dropdown" class="hidden absolute right-0 top-11 w-40 bg-[#1e2024] border border-[#5a413a] rounded-lg shadow-xl p-1 z-50">
-            <button onclick="ejecutarLogout()" class="w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#ffb4ab] hover:bg-[#2c303b] rounded-md transition-all">
-              <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </nav>
-
-  <div id="page-dashboard" class="page active">
-    <div class="page-inner">
-      <div style="margin-bottom:20px;">
-        <h2 class="section-title">DASHBOARD NBA</h2>
-        <p class="section-sub">Análisis de datos históricos NBA 1979–2026 · Tableau Public</p>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;" id="kpi-grid">
-        <div class="stat-card">
-          <div class="corner"></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Teams</span>
-            <span class="material-symbols-outlined fill-icon" style="color:#e8512a;font-size:19px;">groups</span>
-          </div>
-          <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">30</div>
-          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Franquicias activas</div>
-        </div>
-        <div class="stat-card">
-          <div class="corner"></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Seasons</span>
-            <span class="material-symbols-outlined fill-icon" style="color:#e8512a;font-size:19px;">calendar_month</span>
-          </div>
-          <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">46</div>
-          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Temporadas (1979–2026)</div>
-        </div>
-        <div class="stat-card">
-          <div class="corner"></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Players</span>
-            <span class="material-symbols-outlined fill-icon" style="color:#e8512a;font-size:19px;">directions_run</span>
-          </div>
-          <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">4800+</div>
-          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Jugadores en dataset</div>
-        </div>
-        <div class="stat-card">
-          <div class="corner"></div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <span style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Dataset</span>
-            <span class="material-symbols-outlined fill-icon" style="color:#ffb874;font-size:19px;">database</span>
-          </div>
-          <div class="stat-value" style="color:#ffb874;margin-top:6px;">NBA</div>
-          <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Kaggle · Basketball Ref.</div>
-        </div>
-      </div>
-
-      <div id="tableau-card" style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
-        <div style="padding:11px 16px;border-bottom:1px solid #5a413a;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:#0c0e12;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="material-symbols-outlined" style="font-size:17px;color:#e8512a;">analytics</span>
-            <span style="font-size:13px;font-weight:600;color:#e2e2e8;">Performance Analytics Canvas</span>
-            <span style="font-size:11px;color:#e2bfb6;background:#1e2024;padding:2px 8px;border-radius:4px;border:1px solid #5a413a;" id="current-tab-label">Dashboard 1</span>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn-icon" title="Pantalla completa" onclick="toggleFullscreen()">
-              <span class="material-symbols-outlined" style="font-size:18px;">fullscreen</span>
-            </button>
-            <button class="btn-icon" title="Abrir en Tableau Public" onclick="openTableauPublic()">
-              <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span>
-            </button>
-          </div>
-        </div>
-
-        <div style="padding:10px 16px;background:#0c0e12;border-bottom:1px solid #5a413a;flex-shrink:0;">
-          <div class="tableau-tabs" id="tableau-tabs">
-            <button class="tab-btn" onclick="selectTab(this,'hoja1','Hoja 1')">Hoja 1</button>
-            <button class="tab-btn" onclick="selectTab(this,'hoja2','Hoja 2')">Hoja 2</button>
-            <button class="tab-btn" onclick="selectTab(this,'hoja3','Hoja 3')">Hoja 3</button>
-            <button class="tab-btn" onclick="selectTab(this,'hoja4','Hoja 4')">Hoja 4</button>
-            <button class="tab-btn" onclick="selectTab(this,'hoja5','Hoja 5')">Hoja 5</button>
-            <button class="tab-btn active" onclick="selectTab(this,'dash1','Dashboard 1')">Dashboard 1</button>
-            <button class="tab-btn" onclick="selectTab(this,'dash2','Dashboard 2')">Dashboard 2</button>
-            <button class="tab-btn" onclick="selectTab(this,'dash3','Dashboard 3')">Dashboard 3</button>
-          </div>
-        </div>
-
-        <div id="tableau-wrapper">
-          <iframe id="tableau-frame"
-            src="https://public.tableau.com/views/AppNBA2/Dashboard1?:embed=y&:showVizHome=no&:tabs=no&:toolbar=bottom&:device=desktop&:animate_transition=yes"
-            allowfullscreen
-            title="Performance Analytics Canvas - NBA">
-          </iframe>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px;">
-        <div class="stat-card">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-            <div>
-              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">% Triples Liga</div>
-              <div style="font-family:'Bebas Neue';font-size:30px;color:#ffb874;line-height:1;margin-top:2px;">38.2%</div>
-            </div>
-            <span style="font-size:11px;color:#4ade80;background:rgba(74,222,128,.1);padding:3px 7px;border-radius:4px;border:1px solid rgba(74,222,128,.25);flex-shrink:0;">▲ +2.1%</span>
-          </div>
-          <div class="bar-chart" id="chart-3pt"></div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:#e2bfb6;margin-top:4px;opacity:.7;">
-            <span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;margin-bottom:10px;">Top 5 PER Líderes (2024-25)</div>
-          <div id="per-list" style="display:flex;flex-direction:column;gap:7px;"></div>
-        </div>
-
-        <div class="stat-card">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-            <div>
-              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Pts Promedio Liga</div>
-              <div style="font-family:'Bebas Neue';font-size:30px;color:#e2e2e8;line-height:1;margin-top:2px;">114.8</div>
-            </div>
-            <span style="font-size:11px;color:#4ade80;background:rgba(74,222,128,.1);padding:3px 7px;border-radius:4px;border:1px solid rgba(74,222,128,.25);flex-shrink:0;">▲ +0.9</span>
-          </div>
-          <div class="bar-chart" id="chart-ppg"></div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:#e2bfb6;margin-top:4px;opacity:.7;">
-            <span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span>
-          </div>
-        </div>
-      </div>
-    </div></div>
-
-  <div id="page-jugadores" class="page">
-    <div class="page-inner">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h2 class="section-title">JUGADORES NBA</h2>
-          <p class="section-sub">Estadísticas por temporada 2024-25 · ABM completo</p>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn-secondary" onclick="exportPlayers()">
-            <span class="material-symbols-outlined" style="font-size:16px;">download</span>Exportar CSV
+        <div id="auth-container" class="relative">
+          <button id="btn-login-header" class="btn-primary" onclick="mostrarLoginEnModal()">
+            <span class="material-symbols-outlined">login</span>
+            <span>Iniciar Sesión</span>
           </button>
-          <button class="btn-primary" onclick="openAddPlayer()">
-            <span class="material-symbols-outlined" style="font-size:16px;">add</span>Agregar Jugador
-          </button>
-        </div>
-      </div>
 
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-        <div class="search-box" style="flex:1;min-width:180px;">
-          <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
-          <input type="text" placeholder="Buscar jugador o equipo..." id="player-search" oninput="filterPlayers()" style="flex:1;min-width:80px;"/>
+          <div id="user-profile-menu" class="hidden flex-col items-center relative">
+            <div
+              style="width:36px;height:36px;border-radius:50%;background:#1a1c20;border:2px solid #5a413a;display:flex;align-items:center;justify-content:center;cursor:pointer;"
+              onclick="toggleLogoutMenu()">
+              <span class="material-symbols-outlined fill-icon"
+                style="color:#ffb874;font-size:22px;">account_circle</span>
+            </div>
+            <div id="logout-dropdown"
+              class="hidden absolute right-0 top-11 w-40 bg-[#1e2024] border border-[#5a413a] rounded-lg shadow-xl p-1 z-50">
+              <button onclick="ejecutarLogout()"
+                class="w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#ffb4ab] hover:bg-[#2c303b] rounded-md transition-all">
+                <span class="material-symbols-outlined" style="font-size:16px;">logout</span>
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
         </div>
-        <button class="filter-pill active" onclick="filterPos(this,'ALL')">Todos</button>
-        <button class="filter-pill" onclick="filterPos(this,'G')">Guard</button>
-        <button class="filter-pill" onclick="filterPos(this,'F')">Forward</button>
-        <button class="filter-pill" onclick="filterPos(this,'C')">Center</button>
-        <select class="form-select" style="width:auto;padding:6px 12px;font-size:12px;" onchange="sortPlayers(this.value)">
-          <option value="per">↓ PER</option>
-          <option value="ppg">↓ PPG</option>
-          <option value="name">A–Z Nombre</option>
-          <option value="team">A–Z Equipo</option>
-        </select>
       </div>
+    </nav>
 
-      <div style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;">
-        <div style="overflow-x:auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:36px;">#</th>
-                <th>Jugador</th>
-                <th>Equipo</th>
-                <th>Pos</th>
-                <th style="text-align:right;">PPG</th>
-                <th style="text-align:right;">RPG</th>
-                <th style="text-align:right;">APG</th>
-                <th style="text-align:right;color:#ffb874;">PER</th>
-                <th style="text-align:right;">TS%</th>
-                <th>Estado</th>
-                <th style="text-align:center;width:110px;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="players-tbody"></tbody>
-          </table>
+    <div id="page-dashboard" class="page active">
+      <div class="page-inner">
+        <div style="margin-bottom:20px;">
+          <h2 class="section-title">DASHBOARD NBA</h2>
+          <p class="section-sub">Análisis de datos históricos NBA 1979–2026 · Tableau Public</p>
         </div>
-        <div style="padding:10px 16px;border-top:1px solid rgba(90,65,58,.4);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#0c0e12;">
-          <span style="font-size:12px;color:#e2bfb6;" id="players-count"></span>
-          <div class="pagination" id="players-pagination"></div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div id="page-usuarios" class="page">
-    <div class="page-inner">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h2 class="section-title">GESTIÓN DE USUARIOS</h2>
-          <p class="section-sub">ABM de cuentas · Roles y permisos del sistema</p>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;" id="kpi-grid">
+          <div class="stat-card">
+            <div class="corner"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <span
+                style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Teams</span>
+              <span class="material-symbols-outlined fill-icon" style="color:#e8512a;font-size:19px;">groups</span>
+            </div>
+            <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">30</div>
+            <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Franquicias activas</div>
+          </div>
+          <div class="stat-card">
+            <div class="corner"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <span
+                style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Seasons</span>
+              <span class="material-symbols-outlined fill-icon"
+                style="color:#e8512a;font-size:19px;">calendar_month</span>
+            </div>
+            <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">46</div>
+            <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Temporadas (1979–2026)</div>
+          </div>
+          <div class="stat-card">
+            <div class="corner"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <span
+                style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Players</span>
+              <span class="material-symbols-outlined fill-icon"
+                style="color:#e8512a;font-size:19px;">directions_run</span>
+            </div>
+            <div class="stat-value" style="color:#e2e2e8;margin-top:6px;">4800+</div>
+            <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Jugadores en dataset</div>
+          </div>
+          <div class="stat-card">
+            <div class="corner"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <span
+                style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Dataset</span>
+              <span class="material-symbols-outlined fill-icon" style="color:#ffb874;font-size:19px;">database</span>
+            </div>
+            <div class="stat-value" style="color:#ffb874;margin-top:6px;">NBA</div>
+            <div style="font-size:11px;color:#e2bfb6;margin-top:2px;">Kaggle · Basketball Ref.</div>
+          </div>
         </div>
-        <button class="btn-primary" onclick="openAddUser()">
-          <span class="material-symbols-outlined" style="font-size:16px;">person_add</span>Nuevo Usuario
-        </button>
-      </div>
 
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
-        <div class="stat-card">
-          <div class="corner"></div>
-          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Total</div>
-          <div class="stat-value" style="color:#ffb874;margin-top:4px;" id="stat-total">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="corner"></div>
-          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Activos</div>
-          <div class="stat-value" style="color:#e2e2e8;margin-top:4px;" id="stat-active">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="corner"></div>
-          <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">Admins</div>
-          <div class="stat-value" style="color:#ffb4a2;margin-top:4px;" id="stat-admins">0</div>
-        </div>
-      </div>
+        <div id="tableau-card"
+          style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
+          <div
+            style="padding:11px 16px;border-bottom:1px solid #5a413a;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:#0c0e12;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="material-symbols-outlined" style="font-size:17px;color:#e8512a;">analytics</span>
+              <span style="font-size:13px;font-weight:600;color:#e2e2e8;">Performance Analytics Canvas</span>
+              <span
+                style="font-size:11px;color:#e2bfb6;background:#1e2024;padding:2px 8px;border-radius:4px;border:1px solid #5a413a;"
+                id="current-tab-label">Dashboard 1</span>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-icon" title="Pantalla completa" onclick="toggleFullscreen()">
+                <span class="material-symbols-outlined" style="font-size:18px;">fullscreen</span>
+              </button>
+              <button class="btn-icon" title="Abrir en Tableau Public" onclick="openTableauPublic()">
+                <span class="material-symbols-outlined" style="font-size:18px;">open_in_new</span>
+              </button>
+            </div>
+          </div>
 
-      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-        <div class="search-box" style="flex:1;min-width:180px;">
-          <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
-          <input type="text" placeholder="Buscar por nombre o correo..." id="user-search" oninput="filterUsers()" style="flex:1;min-width:80px;"/>
+          <div style="padding:10px 16px;background:#0c0e12;border-bottom:1px solid #5a413a;flex-shrink:0;">
+            <div class="tableau-tabs" id="tableau-tabs">
+              <button class="tab-btn" onclick="selectTab(this,'hoja1','Hoja 1')">Hoja 1</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja2','Hoja 2')">Hoja 2</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja3','Hoja 3')">Hoja 3</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja4','Hoja 4')">Hoja 4</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja5','Hoja 5')">Hoja 5</button>
+              <button class="tab-btn active" onclick="selectTab(this,'dash1','Dashboard 1')">Dashboard 1</button>
+              <button class="tab-btn" onclick="selectTab(this,'dash2','Dashboard 2')">Dashboard 2</button>
+              <button class="tab-btn" onclick="selectTab(this,'dash3','Dashboard 3')">Dashboard 3</button>
+            </div>
+          </div>
+
+          <div id="tableau-wrapper">
+            <iframe id="tableau-frame"
+              src="https://public.tableau.com/views/AppNBA2/Dashboard1?:embed=y&:showVizHome=no&:tabs=no&:toolbar=bottom&:device=desktop&:animate_transition=yes"
+              allowfullscreen title="Performance Analytics Canvas - NBA">
+            </iframe>
+          </div>
         </div>
-        <button class="filter-pill active" onclick="filterRole(this,'ALL')">Todos</button>
-        <button class="filter-pill" onclick="filterRole(this,'ADMIN')">Admin</button>
-        <button class="filter-pill" onclick="filterRole(this,'ANALYST')">Analyst</button>
-        <button class="filter-pill" onclick="filterRole(this,'VIEWER')">Viewer</button>
-      </div>
 
-      <div style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;">
-        <div style="overflow-x:auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th style="text-align:center;width:90px;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="users-tbody"></tbody>
-          </table>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:16px;">
+          <div class="stat-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <div
+                  style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">%
+                  Triples Liga</div>
+                <div style="font-family:'Bebas Neue';font-size:30px;color:#ffb874;line-height:1;margin-top:2px;">38.2%
+                </div>
+              </div>
+              <span
+                style="font-size:11px;color:#4ade80;background:rgba(74,222,128,.1);padding:3px 7px;border-radius:4px;border:1px solid rgba(74,222,128,.25);flex-shrink:0;">▲
+                +2.1%</span>
+            </div>
+            <div class="bar-chart" id="chart-3pt"></div>
+            <div
+              style="display:flex;justify-content:space-between;font-size:10px;color:#e2bfb6;margin-top:4px;opacity:.7;">
+              <span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div
+              style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;margin-bottom:10px;">
+              Top 5 PER Líderes (2024-25)</div>
+            <div id="per-list" style="display:flex;flex-direction:column;gap:7px;"></div>
+          </div>
+
+          <div class="stat-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+              <div>
+                <div
+                  style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">
+                  Pts Promedio Liga</div>
+                <div style="font-family:'Bebas Neue';font-size:30px;color:#e2e2e8;line-height:1;margin-top:2px;">114.8
+                </div>
+              </div>
+              <span
+                style="font-size:11px;color:#4ade80;background:rgba(74,222,128,.1);padding:3px 7px;border-radius:4px;border:1px solid rgba(74,222,128,.25);flex-shrink:0;">▲
+                +0.9</span>
+            </div>
+            <div class="bar-chart" id="chart-ppg"></div>
+            <div
+              style="display:flex;justify-content:space-between;font-size:10px;color:#e2bfb6;margin-top:4px;opacity:.7;">
+              <span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span>
+            </div>
+          </div>
         </div>
-        <div style="padding:10px 16px;border-top:1px solid rgba(90,65,58,.4);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#0c0e12;">
-          <span style="font-size:12px;color:#e2bfb6;" id="users-count"></span>
-          <div class="pagination" id="users-pagination"></div>
-        </div>
       </div>
     </div>
-  </div>
 
-</div><div class="modal-overlay" id="user-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 class="modal-title" id="user-modal-title">NUEVO USUARIO</h3>
-      <button class="btn-icon" onclick="closeModal('user-modal')"><span class="material-symbols-outlined">close</span></button>
-    </div>
-    <input type="hidden" id="user-edit-id"/>
-    <div class="form-group">
-      <label class="form-label">Nombre completo *</label>
-      <input class="form-input" id="user-name" type="text" placeholder="Ej: Carlos Mendoza"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Correo electrónico *</label>
-      <input class="form-input" id="user-email" type="email" placeholder="correo@analytics.nba.com"/>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group">
-        <label class="form-label">Rol</label>
-        <select class="form-select" id="user-role">
-          <option value="VIEWER">Viewer</option>
-          <option value="ANALYST">Analyst</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Estado</label>
-        <select class="form-select" id="user-status">
-          <option value="ACTIVE">Activo</option>
-          <option value="INACTIVE">Inactivo</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
-      <button class="btn-secondary" onclick="closeModal('user-modal')">Cancelar</button>
-      <button class="btn-primary" onclick="saveUser()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="player-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 class="modal-title" id="player-modal-title">AGREGAR JUGADOR</h3>
-      <button class="btn-icon" onclick="closeModal('player-modal')"><span class="material-symbols-outlined">close</span></button>
-    </div>
-    <input type="hidden" id="player-edit-id"/>
-    <div class="form-group">
-      <label class="form-label">Nombre del Jugador *</label>
-      <input class="form-input" id="player-name" type="text" placeholder="Ej: LeBron James"/>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group">
-        <label class="form-label">Equipo *</label>
-        <input class="form-input" id="player-team" type="text" placeholder="Ej: LAL"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Posición</label>
-        <select class="form-select" id="player-pos">
-          <option value="G">Guard (Base/Escolta)</option>
-          <option value="F">Forward (Alero/Ala-Pívot)</option>
-          <option value="C">Center (Pívot)</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-      <div class="form-group">
-        <label class="form-label">PPG</label>
-        <input class="form-input" id="player-ppg" type="number" step="0.1" value="0.0"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">RPG</label>
-        <input class="form-input" id="player-rpg" type="number" step="0.1" value="0.0"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">APG</label>
-        <input class="form-input" id="player-apg" type="number" step="0.1" value="0.0"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">PER</label>
-        <input class="form-input" id="player-per" type="number" step="0.1" value="15.0" style="color:#ffb874;font-weight:600;"/>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="form-group">
-        <label class="form-label">TS% (True Shooting)</label>
-        <input class="form-input" id="player-ts" type="number" step="0.001" value="0.550" placeholder="Ej: 0.582"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Estado de Disponibilidad</label>
-        <select class="form-select" id="player-status">
-          <option value="ACTIVE">Activo</option>
-          <option value="INACTIVE">Inactivo / Fuera</option>
-          <option value="INJURED">Lesionado</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
-      <button class="btn-secondary" onclick="closeModal('player-modal')">Cancelar</button>
-      <button class="btn-primary" onclick="savePlayer()">Guardar Jugador</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="settings-modal" onclick="closeModal('settings-modal')">
-  <div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <h3 class="modal-title">CONFIGURACIÓN DEL SISTEMA</h3>
-      <button class="btn-icon" onclick="closeModal('settings-modal')"><span class="material-symbols-outlined">close</span></button>
-    </div>
-    <div style="font-size:13px;color:#e2bfb6;display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <label class="form-label">Servidor Backend URL</label>
-        <input class="form-input" type="text" value="http://127.0.0.1:8000" disabled style="opacity:.6;"/>
-      </div>
-      <div>
-        <label class="form-label">Origen de Datos Actual</label>
-        <div style="background:#1a1c20;border:1px solid #5a413a;padding:10px;border-radius:8px;display:flex;align-items:center;gap:10px;">
-          <span class="material-symbols-outlined pulse" style="color:#4ade80;font-size:18px;">database</span>
+    <div id="page-jugadores" class="page">
+      <div class="page-inner">
+        <div
+          style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
           <div>
-            <div style="font-weight:600;color:#e2e2e8;">SQLite Engine Activo</div>
-            <div style="font-size:11px;opacity:.7;">Archivo local: nba_users.db</div>
+            <h2 class="section-title">JUGADORES NBA</h2>
+            <p class="section-sub">Estadísticas por temporada 2024-25 · ABM completo</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-secondary" onclick="exportPlayers()">
+              <span class="material-symbols-outlined" style="font-size:16px;">download</span>Exportar CSV
+            </button>
+            <button class="btn-primary" onclick="openAddPlayer()">
+              <span class="material-symbols-outlined" style="font-size:16px;">add</span>Agregar Jugador
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+          <div class="search-box" style="flex:1;min-width:180px;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
+            <input type="text" placeholder="Buscar jugador o equipo..." id="player-search" oninput="filterPlayers()"
+              style="flex:1;min-width:80px;" />
+          </div>
+          <button class="filter-pill active" onclick="filterPos(this,'ALL')">Todos</button>
+          <button class="filter-pill" onclick="filterPos(this,'G')">Guard</button>
+          <button class="filter-pill" onclick="filterPos(this,'F')">Forward</button>
+          <button class="filter-pill" onclick="filterPos(this,'C')">Center</button>
+          <select class="form-select" style="width:auto;padding:6px 12px;font-size:12px;"
+            onchange="sortPlayers(this.value)">
+            <option value="per">↓ PER</option>
+            <option value="ppg">↓ PPG</option>
+            <option value="name">A–Z Nombre</option>
+            <option value="team">A–Z Equipo</option>
+          </select>
+        </div>
+
+        <div style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;">
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:36px;">#</th>
+                  <th>Jugador</th>
+                  <th>Equipo</th>
+                  <th>Pos</th>
+                  <th style="text-align:right;">PPG</th>
+                  <th style="text-align:right;">RPG</th>
+                  <th style="text-align:right;">APG</th>
+                  <th style="text-align:right;color:#ffb874;">PER</th>
+                  <th style="text-align:right;">TS%</th>
+                  <th>Estado</th>
+                  <th style="text-align:center;width:110px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="players-tbody"></tbody>
+            </table>
+          </div>
+          <div
+            style="padding:10px 16px;border-top:1px solid rgba(90,65,58,.4);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#0c0e12;">
+            <span style="font-size:12px;color:#e2bfb6;" id="players-count"></span>
+            <div class="pagination" id="players-pagination"></div>
           </div>
         </div>
       </div>
-      <div style="height:1px;background:#5a413a;margin:6px 0;"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span>Sincronización en tiempo real</span>
-        <span class="badge badge-active">Habilitado</span>
+    </div>
+
+    <div id="page-usuarios" class="page">
+      <div class="page-inner">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 class="section-title">GESTIÓN DE USUARIOS</h2>
+            <p class="section-sub">ABM de cuentas · Roles y permisos del sistema</p>
+          </div>
+          <button class="btn-primary" onclick="openAddUser()">
+            <span class="material-symbols-outlined" style="font-size:16px;">person_add</span>Nuevo Usuario
+          </button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+          <div class="stat-card">
+            <div class="corner"></div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">
+              Total</div>
+            <div class="stat-value" style="color:#ffb874;margin-top:4px;" id="stat-total">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="corner"></div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">
+              Activos</div>
+            <div class="stat-value" style="color:#e2e2e8;margin-top:4px;" id="stat-active">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="corner"></div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;">
+              Admins</div>
+            <div class="stat-value" style="color:#ffb4a2;margin-top:4px;" id="stat-admins">0</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+          <div class="search-box" style="flex:1;min-width:180px;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#e2bfb6;">search</span>
+            <input type="text" placeholder="Buscar por nombre o correo..." id="user-search" oninput="filterUsers()"
+              style="flex:1;min-width:80px;" />
+          </div>
+          <button class="filter-pill active" onclick="filterRole(this,'ALL')">Todos</button>
+          <button class="filter-pill" onclick="filterRole(this,'ADMIN')">Admin</button>
+          <button class="filter-pill" onclick="filterRole(this,'ANALYST')">Analyst</button>
+          <button class="filter-pill" onclick="filterRole(this,'VIEWER')">Viewer</button>
+        </div>
+
+        <div style="background:#111318;border:1px solid #5a413a;border-radius:12px;overflow:hidden;flex:1;">
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Correo</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th style="text-align:center;width:90px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody"></tbody>
+            </table>
+          </div>
+          <div
+            style="padding:10px 16px;border-top:1px solid rgba(90,65,58,.4);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#0c0e12;">
+            <span style="font-size:12px;color:#e2bfb6;" id="users-count"></span>
+            <div class="pagination" id="users-pagination"></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:24px;">
-      <button class="btn-primary" onclick="closeModal('settings-modal')">Entendido</button>
+
+    <!-- ════════════════════════ PAGE: PRONÓSTICO ════════════════════════ -->
+    <div id="page-pronostico" class="page">
+      <div class="page-inner">
+        <div style="margin-bottom:24px;">
+          <h2 class="section-title">GENERAR PRONÓSTICO</h2>
+          <p class="section-sub">Simulación de partido · Motor analítico basado en estadísticas históricas</p>
+        </div>
+
+        <!-- Selector de equipos -->
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:end;margin-bottom:24px;max-width:700px;">
+          <div>
+            <label class="form-label">Equipo Local</label>
+            <select class="form-select" id="prono-local">
+              <option value="">— Seleccionar equipo —</option>
+            </select>
+          </div>
+          <div style="text-align:center;padding-bottom:6px;">
+            <span style="font-family:'Bebas Neue';font-size:28px;color:#5a413a;letter-spacing:.1em;">VS</span>
+          </div>
+          <div>
+            <label class="form-label">Equipo Visitante</label>
+            <select class="form-select" id="prono-visitante">
+              <option value="">— Seleccionar equipo —</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="btn-simular" onclick="simularPronostico()" style="min-width:200px;">
+          <span class="material-symbols-outlined" style="font-size:17px;">sports_score</span>
+          Simular Partido
+        </button>
+
+        <!-- Resultado -->
+        <div id="prono-resultado" style="display:none;margin-top:28px;max-width:700px;">
+
+          <!-- Tarjetas de equipos -->
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch;margin-bottom:16px;">
+
+            <div id="card-local" class="stat-card" style="text-align:center;padding:20px 16px;">
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;margin-bottom:8px;">LOCAL</div>
+              <div id="res-local-nombre" style="font-family:'Bebas Neue';font-size:32px;color:#e2e2e8;letter-spacing:.04em;line-height:1;"></div>
+              <div id="res-local-season" style="font-size:11px;color:#e2bfb6;margin-top:4px;"></div>
+              <div style="margin-top:12px;background:#0c0e12;border-radius:8px;padding:10px;">
+                <div style="font-size:11px;color:#e2bfb6;margin-bottom:2px;">Promedio Pts/Partido</div>
+                <div id="res-local-ppg" style="font-family:'Bebas Neue';font-size:36px;color:#ffb874;line-height:1;"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:'Bebas Neue';font-size:22px;color:#5a413a;letter-spacing:.1em;">VS</span>
+            </div>
+
+            <div id="card-visitante" class="stat-card" style="text-align:center;padding:20px 16px;">
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;color:#e2bfb6;text-transform:uppercase;margin-bottom:8px;">VISITANTE</div>
+              <div id="res-visitante-nombre" style="font-family:'Bebas Neue';font-size:32px;color:#e2e2e8;letter-spacing:.04em;line-height:1;"></div>
+              <div id="res-visitante-season" style="font-size:11px;color:#e2bfb6;margin-top:4px;"></div>
+              <div style="margin-top:12px;background:#0c0e12;border-radius:8px;padding:10px;">
+                <div style="font-size:11px;color:#e2bfb6;margin-bottom:2px;">Promedio Pts/Partido</div>
+                <div id="res-visitante-ppg" style="font-family:'Bebas Neue';font-size:36px;color:#e2e2e8;line-height:1;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Banner ganador -->
+          <div id="banner-ganador" style="background:#111318;border:1px solid #5a413a;border-radius:12px;padding:20px;text-align:center;">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.08em;color:#e2bfb6;text-transform:uppercase;margin-bottom:8px;">
+              <span class="material-symbols-outlined fill-icon" style="font-size:15px;vertical-align:middle;color:#ffb874;">emoji_events</span>
+              Ganador Predicho
+            </div>
+            <div id="res-ganador" style="font-family:'Bebas Neue';font-size:42px;color:#ffb874;letter-spacing:.05em;line-height:1;"></div>
+            <div id="res-descripcion" style="font-size:12px;color:#e2bfb6;margin-top:8px;"></div>
+          </div>
+
+          <!-- ID de predicción guardada -->
+          <div id="prono-id-row" style="display:none;margin-top:10px;text-align:right;">
+            <span style="font-size:11px;color:#5a413a;">Predicción #<span id="res-id-prediccion"></span> guardada en historial</span>
+          </div>
+
+        </div>
+
+        <!-- Estado de error -->
+        <div id="prono-error" style="display:none;margin-top:20px;max-width:700px;background:rgba(255,180,171,.07);border:1px solid rgba(255,180,171,.25);border-radius:10px;padding:16px;color:#ffb4ab;font-size:13px;">
+          <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:6px;">error</span>
+          <span id="prono-error-msg"></span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+  <div class="modal-overlay" id="user-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="user-modal-title">NUEVO USUARIO</h3>
+        <button class="btn-icon" onclick="closeModal('user-modal')"><span
+            class="material-symbols-outlined">close</span></button>
+      </div>
+      <input type="hidden" id="user-edit-id" />
+      <div class="form-group">
+        <label class="form-label">Nombre completo *</label>
+        <input class="form-input" id="user-name" type="text" placeholder="Ej: Carlos Mendoza" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico *</label>
+        <input class="form-input" id="user-email" type="email" placeholder="correo@analytics.nba.com" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select class="form-select" id="user-role">
+            <option value="VIEWER">Viewer</option>
+            <option value="ANALYST">Analyst</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select class="form-select" id="user-status">
+            <option value="ACTIVE">Activo</option>
+            <option value="INACTIVE">Inactivo</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
+        <button class="btn-secondary" onclick="closeModal('user-modal')">Cancelar</button>
+        <button class="btn-primary" onclick="saveUser()">Guardar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="toast">
-  <span class="material-symbols-outlined t-icon" id="toast-icon">info</span>
-  <span id="toast-text">Notificación</span>
-</div>
+  <div class="modal-overlay" id="player-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="player-modal-title">AGREGAR JUGADOR</h3>
+        <button class="btn-icon" onclick="closeModal('player-modal')"><span
+            class="material-symbols-outlined">close</span></button>
+      </div>
+      <input type="hidden" id="player-edit-id" />
+      <div class="form-group">
+        <label class="form-label">Nombre del Jugador *</label>
+        <input class="form-input" id="player-name" type="text" placeholder="Ej: LeBron James" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Equipo *</label>
+          <input class="form-input" id="player-team" type="text" placeholder="Ej: LAL" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Posición</label>
+          <select class="form-select" id="player-pos">
+            <option value="G">Guard (Base/Escolta)</option>
+            <option value="F">Forward (Alero/Ala-Pívot)</option>
+            <option value="C">Center (Pívot)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <div class="form-group">
+          <label class="form-label">PPG</label>
+          <input class="form-input" id="player-ppg" type="number" step="0.1" value="0.0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">RPG</label>
+          <input class="form-input" id="player-rpg" type="number" step="0.1" value="0.0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">APG</label>
+          <input class="form-input" id="player-apg" type="number" step="0.1" value="0.0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">PER</label>
+          <input class="form-input" id="player-per" type="number" step="0.1" value="15.0"
+            style="color:#ffb874;font-weight:600;" />
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label">TS% (True Shooting)</label>
+          <input class="form-input" id="player-ts" type="number" step="0.001" value="0.550" placeholder="Ej: 0.582" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado de Disponibilidad</label>
+          <select class="form-select" id="player-status">
+            <option value="ACTIVE">Activo</option>
+            <option value="INACTIVE">Inactivo / Fuera</option>
+            <option value="INJURED">Lesionado</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px;">
+        <button class="btn-secondary" onclick="closeModal('player-modal')">Cancelar</button>
+        <button class="btn-primary" onclick="savePlayer()">Guardar Jugador</button>
+      </div>
+    </div>
+  </div>
 
-<script>
-// ════════════════════════════════════════════════════
-// DATA MOCKS (Fallback frontend storage)
-// ════════════════════════════════════════════════════
-let usersData = [
-  { id: 101, name: 'Leonel Eguren', email: 'leguren@analytics.nba.com', role: 'ADMIN', status: 'ACTIVE' },
-  { id: 102, name: 'Anahí Silva', email: 'asilva@analytics.nba.com', role: 'ANALYST', status: 'ACTIVE' },
-  { id: 103, name: 'Marcos Juárez', email: 'mjuarez@viewer.nba.com', role: 'VIEWER', status: 'ACTIVE' },
-  { id: 104, name: 'Laura Di Franco', email: 'ldifranco@analytics.nba.com', role: 'ANALYST', status: 'INACTIVE' }
-];
+  <div class="modal-overlay" id="settings-modal" onclick="closeModal('settings-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">CONFIGURACIÓN DEL SISTEMA</h3>
+        <button class="btn-icon" onclick="closeModal('settings-modal')"><span
+            class="material-symbols-outlined">close</span></button>
+      </div>
+      <div style="font-size:13px;color:#e2bfb6;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label class="form-label">Servidor Backend URL</label>
+          <input class="form-input" type="text" value="http://127.0.0.1:8000" disabled style="opacity:.6;" />
+        </div>
+        <div>
+          <label class="form-label">Origen de Datos Actual</label>
+          <div
+            style="background:#1a1c20;border:1px solid #5a413a;padding:10px;border-radius:8px;display:flex;align-items:center;gap:10px;">
+            <span class="material-symbols-outlined pulse" style="color:#4ade80;font-size:18px;">database</span>
+            <div>
+              <div style="font-weight:600;color:#e2e2e8;">SQLite Engine Activo</div>
+              <div style="font-size:11px;opacity:.7;">Archivo local: nba_users.db</div>
+            </div>
+          </div>
+        </div>
+        <div style="height:1px;background:#5a413a;margin:6px 0;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Sincronización en tiempo real</span>
+          <span class="badge badge-active">Habilitado</span>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:24px;">
+        <button class="btn-primary" onclick="closeModal('settings-modal')">Entendido</button>
+      </div>
+    </div>
+  </div>
 
-let playersData = [
-  { id:1, name:'Nikola Jokic', team:'DEN', pos:'C', ppg:29.7, rpg:13.1, apg:9.2, per:31.8, ts:0.652, status:'ACTIVE' },
-  { id:2, name:'Shai Gilgeous-Alexander', team:'OKC', pos:'G', ppg:30.1, rpg:5.5, apg:6.4, per:30.4, ts:0.636, status:'ACTIVE' },
-  { id:3, name:'Luka Doncic', team:'DAL', pos:'G', ppg:32.4, rpg:8.6, apg:9.8, per:29.1, ts:0.615, status:'ACTIVE' },
-  { id:4, name:'Giannis Antetokounmpo', team:'MIL', pos:'F', ppg:31.0, rpg:11.5, apg:5.8, per:29.9, ts:0.648, status:'INJURED' },
-  { id:5, name:'Joel Embiid', team:'PHI', pos:'C', ppg:28.5, rpg:10.2, apg:4.1, per:28.7, ts:0.622, status:'INACTIVE' },
-  { id:6, name:'Jayson Tatum', team:'BOS', pos:'F', ppg:27.2, rpg:8.1, apg:4.9, per:24.5, ts:0.604, status:'ACTIVE' },
-  { id:7, name:'Anthony Edwards', team:'MIN', pos:'G', ppg:26.4, rpg:5.4, apg:5.1, per:23.1, ts:0.598, status:'ACTIVE' },
-  { id:8, name:'Kevin Durant', team:'PHX', pos:'F', ppg:27.1, rpg:6.6, apg:5.0, per:24.2, ts:0.641, status:'ACTIVE' }
-];
+  <div id="toast">
+    <span class="material-symbols-outlined t-icon" id="toast-icon">info</span>
+    <span id="toast-text">Notificación</span>
+  </div>
 
-// Pagination states
-let usersPage = 1, usersLimit = 5, filteredUsers = [...usersData];
-let playersPage = 1, playersLimit = 5, filteredPlayersList = [...playersData];
-let currentPlayerFilterPos = 'ALL';
+  <script>
+    // ════════════════════════════════════════════════════
+    // DATA MOCKS (Fallback frontend storage)
+    // ════════════════════════════════════════════════════
 
-// ════════════════════════════════════════════════════
-// CONTROL DE ACCESO Y LOGIN - FASTAPI CORREGIDO
-// ════════════════════════════════════════════════════
-const BACKEND_URL = "http://127.0.0.1:8000";
+    window.onload = () => {
+      cargarUsuarios();
+    };
 
-function mostrarLoginEnModal() {
-  const modal = document.getElementById('user-modal');
-  if (!modal) return;
+    let usersData = [];
 
-  // Modificamos el contenedor para agregar un atributo de control que impida el cierre externo
-  modal.setAttribute('data-bloqueado', 'true');
+    let playersData = [
+      { id: 1, name: 'Nikola Jokic', team: 'DEN', pos: 'C', ppg: 29.7, rpg: 13.1, apg: 9.2, per: 31.8, ts: 0.652, status: 'ACTIVE' },
+      { id: 2, name: 'Shai Gilgeous-Alexander', team: 'OKC', pos: 'G', ppg: 30.1, rpg: 5.5, apg: 6.4, per: 30.4, ts: 0.636, status: 'ACTIVE' },
+      { id: 3, name: 'Luka Doncic', team: 'DAL', pos: 'G', ppg: 32.4, rpg: 8.6, apg: 9.8, per: 29.1, ts: 0.615, status: 'ACTIVE' },
+      { id: 4, name: 'Giannis Antetokounmpo', team: 'MIL', pos: 'F', ppg: 31.0, rpg: 11.5, apg: 5.8, per: 29.9, ts: 0.648, status: 'INJURED' },
+      { id: 5, name: 'Joel Embiid', team: 'PHI', pos: 'C', ppg: 28.5, rpg: 10.2, apg: 4.1, per: 28.7, ts: 0.622, status: 'INACTIVE' },
+      { id: 6, name: 'Jayson Tatum', team: 'BOS', pos: 'F', ppg: 27.2, rpg: 8.1, apg: 4.9, per: 24.5, ts: 0.604, status: 'ACTIVE' },
+      { id: 7, name: 'Anthony Edwards', team: 'MIN', pos: 'G', ppg: 26.4, rpg: 5.4, apg: 5.1, per: 23.1, ts: 0.598, status: 'ACTIVE' },
+      { id: 8, name: 'Kevin Durant', team: 'PHX', pos: 'F', ppg: 27.1, rpg: 6.6, apg: 5.0, per: 24.2, ts: 0.641, status: 'ACTIVE' }
+    ];
 
-  modal.querySelector('.modal').innerHTML = `
+    // Pagination states
+    let usersPage = 1, usersLimit = 5, filteredUsers = [...usersData];
+    let playersPage = 1, playersLimit = 5, filteredPlayersList = [...playersData];
+    let currentPlayerFilterPos = 'ALL';
+
+    // ════════════════════════════════════════════════════
+    // CONTROL DE ACCESO Y LOGIN - FASTAPI CORREGIDO
+    // ════════════════════════════════════════════════════
+    const BACKEND_URL = "http://127.0.0.1:8000";
+
+    function mostrarLoginEnModal() {
+      const modal = document.getElementById('user-modal');
+      if (!modal) return;
+
+      // Modificamos el contenedor para agregar un atributo de control que impida el cierre externo
+      modal.setAttribute('data-bloqueado', 'true');
+
+      modal.querySelector('.modal').innerHTML = `
     <div class="modal-header">
       <h3 class="modal-title" style="color: #ffb874;">🏀 INGRESO AL SISTEMA</h3>
       <button class="btn-icon" onclick="cerrarLoginForzado()">
@@ -715,205 +1438,232 @@ function mostrarLoginEnModal() {
     </form>
   `;
 
-  openModal('user-modal');
-}
-
-function cerrarLoginForzado() {
-  const modal = document.getElementById('user-modal');
-  if (modal) modal.removeAttribute('data-bloqueado');
-  closeModal('user-modal');
-}
-
-async function enviarLoginBackend(event) {
-  event.preventDefault();
-  
-  const correo = document.getElementById('api-correo').value.trim();
-  const contrasena = document.getElementById('api-contrasena').value;
-
-  try {
-    const response = await fetch(`${BACKEND_URL}/usuarios/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correo: correo, contrasena: contrasena })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error("usuario o contraseña incorrectas");
+      openModal('user-modal');
     }
 
-    // RESOLUCIÓN DE CAMPO DINÁMICO: Lee data de forma directa o anidada
-    const usuarioReal = data.usuario ? data.usuario : data;
-
-    if (!usuarioReal || !usuarioReal.id) {
-      throw new Error("La respuesta del servidor no contiene un ID de usuario válido");
+    function cerrarLoginForzado() {
+      const modal = document.getElementById('user-modal');
+      if (modal) modal.removeAttribute('data-bloqueado');
+      closeModal('user-modal');
     }
 
-    // Guardar datos validados en el navegador
-    localStorage.setItem('nba_user_id', usuarioReal.id);
-    localStorage.setItem('nba_user_name', usuarioReal.nombre || "Usuario");
-    
-    // Remover bloqueo y cerrar
-    cerrarLoginForzado();
-    
-    // Cambiar elementos del Front y lanzar Alerta de Éxito
-    actualizarEstadoAutenticacion(true);
-    showToast("Login exitoso", "check_circle");
+    async function enviarLoginBackend(event) {
+      event.preventDefault();
 
-  } catch (error) {
-    console.error("Error detectado en Login:", error);
-    showToast("usuario o contraseña incorrectas", "error");
-  }
-}
+      const correo = document.getElementById('api-correo').value.trim();
+      const contrasena = document.getElementById('api-contrasena').value;
 
-function toggleLogoutMenu() {
-  const dropdown = document.getElementById('logout-dropdown');
-  if (dropdown) dropdown.classList.toggle('hidden');
-}
+      try {
+        const response = await fetch(`${BACKEND_URL}/usuarios/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo: correo, contrasena: contrasena })
+        });
 
-function ejecutarLogout() {
-  localStorage.clear();
-  document.getElementById('logout-dropdown').classList.add('hidden');
-  actualizarEstadoAutenticacion(false);
-  showToast("Sesión cerrada correctamente", "info");
-}
+        const data = await response.json();
 
-function actualizarEstadoAutenticacion(isLogued) {
-  const btnLogin = document.getElementById('btn-login-header');
-  const profileMenu = document.getElementById('user-profile-menu');
-  
-  if (!btnLogin || !profileMenu) return;
+        if (!response.ok) {
+          throw new Error("usuario o contraseña incorrectas");
+        }
 
-  if (isLogued) {
-    btnLogin.classList.add('hidden');
-    profileMenu.classList.remove('hidden');
-    profileMenu.classList.add('flex');
-  } else {
-    btnLogin.classList.remove('hidden');
-    profileMenu.classList.add('hidden');
-    profileMenu.classList.remove('flex');
-  }
-}
+        // RESOLUCIÓN DE CAMPO DINÁMICO: Lee data de forma directa o anidada
+        const usuarioReal = data.usuario ? data.usuario : data;
 
-// ════════════════════════════════════════════════════
-// NAVIGATION & LAYOUT UI CONTROLS
-// ════════════════════════════════════════════════════
-function navigate(pageId) {
-  // Ajustar vistas móviles si están abiertas
-  closeSidebar();
-  
-  // Normalizar id para sincronización de pestañas gemelas (TopNav y Sidebar)
-  let baseId = pageId;
-  if(pageId === 'dashboard') baseId = 'dashboard';
-  if(pageId === 'jugadores') baseId = 'jugadores';
-  if(pageId === 'usuarios') baseId = 'usuarios';
+        if (!usuarioReal || !usuarioReal.id) {
+          throw new Error("La respuesta del servidor no contiene un ID de usuario válido");
+        }
 
-  // Toggle active pages
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  const targetPage = document.getElementById('page-' + baseId);
-  if(targetPage) targetPage.classList.add('active');
+        // Guardar datos validados en el navegador
+        localStorage.setItem('nba_user_id', usuarioReal.id);
+        localStorage.setItem('nba_user_name', usuarioReal.nombre || "Usuario");
 
-  // Sync Sidebar active state
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  const activeLink = document.getElementById('nav-' + baseId);
-  if(activeLink) activeLink.classList.add('active');
+        // Remover bloqueo y cerrar
+        cerrarLoginForzado();
 
-  // Sync Topnav tab bar highlights
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  if(baseId === 'dashboard') document.getElementById('tnav-dashboard')?.classList.add('active');
-  if(baseId === 'usuarios') document.getElementById('tnav-gestion')?.classList.add('active');
-}
+        // Cambiar elementos del Front y lanzar Alerta de Éxito
+        actualizarEstadoAutenticacion(true);
+        showToast("Login exitoso", "check_circle");
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('open');
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebar-overlay').classList.remove('open');
-}
+      } catch (error) {
+        console.error("Error detectado en Login:", error);
+        showToast("usuario o contraseña incorrectas", "error");
+      }
+    }
 
-// ════════════════════════════════════════════════════
-// MODAL SYSTEM
-// ════════════════════════════════════════════════════
-function openModal(id) {
-  document.getElementById(id)?.classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id)?.classList.remove('open');
-}
+    function toggleLogoutMenu() {
+      const dropdown = document.getElementById('logout-dropdown');
+      if (dropdown) dropdown.classList.toggle('hidden');
+    }
 
-// ════════════════════════════════════════════════════
-// TOAST NOTIFICATIONS
-// ════════════════════════════════════════════════════
-let toastTimeout;
-function showToast(text, iconName = 'info') {
-  const t = document.getElementById('toast');
-  const tIcon = document.getElementById('toast-icon');
-  const tText = document.getElementById('toast-text');
-  
-  if(!t) return;
-  
-  tIcon.textContent = iconName;
-  tText.textContent = text;
-  
-  t.classList.add('show');
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => t.classList.remove('show'), 3500);
-}
+    function ejecutarLogout() {
+      localStorage.clear();
+      document.getElementById('logout-dropdown').classList.add('hidden');
+      actualizarEstadoAutenticacion(false);
+      showToast("Sesión cerrada correctamente", "info");
+    }
 
-// ════════════════════════════════════════════════════
-// TABLEAU PUBLIC INTERACTION
-// ════════════════════════════════════════════════════
-function selectTab(btn, viewName, labelText) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('current-tab-label').textContent = labelText;
-  
-  // Mapeo dinámico de dashboards/hojas en la URL incrustada
-  let urlMap = {
-    'hoja1': 'Hoja1', 'hoja2': 'Hoja2', 'hoja3': 'Hoja3', 'hoja4': 'Hoja4', 'hoja5': 'Hoja5',
-    'dash1': 'Dashboard1', 'dash2': 'Dashboard2', 'dash3': 'Dashboard3'
-  };
-  const targetView = urlMap[viewName] || 'Dashboard1';
-  document.getElementById('tableau-frame').src = `https://public.tableau.com/views/AppNBA2/${targetView}?:embed=y&:showVizHome=no&:tabs=no&:toolbar=bottom&:device=desktop&:animate_transition=yes`;
-}
+    function actualizarEstadoAutenticacion(isLogued) {
+      const btnLogin = document.getElementById('btn-login-header');
+      const profileMenu = document.getElementById('user-profile-menu');
 
-function toggleFullscreen() {
-  const card = document.getElementById('tableau-card');
-  if (!document.fullscreenElement) {
-    card.requestFullscreen().catch(err => {
-      showToast(`Error de pantalla completa: ${err.message}`, 'error');
-    });
-  } else {
-    document.exitFullscreen();
-  }
-}
+      if (!btnLogin || !profileMenu) return;
 
-function openTableauPublic() {
-  window.open('https://public.tableau.com/views/AppNBA2/Dashboard1', '_blank');
-}
+      if (isLogued) {
+        btnLogin.classList.add('hidden');
+        profileMenu.classList.remove('hidden');
+        profileMenu.classList.add('flex');
+      } else {
+        btnLogin.classList.remove('hidden');
+        profileMenu.classList.add('hidden');
+        profileMenu.classList.remove('flex');
+      }
+    }
 
-// ════════════════════════════════════════════════════
-// ABM GESTIÓN: USUARIOS (MOCK FRONTEND)
-// ════════════════════════════════════════════════════
-function renderUsers() {
-  const tbody = document.getElementById('users-tbody');
-  if(!tbody) return;
-  tbody.innerHTML = '';
+    // ════════════════════════════════════════════════════
+    // NAVIGATION & LAYOUT UI CONTROLS
+    // ════════════════════════════════════════════════════
+    function navigate(pageId) {
+      // Ajustar vistas móviles si están abiertas
+      closeSidebar();
 
-  // Actualizar contadores analíticos superiores
-  document.getElementById('stat-total').textContent = usersData.length;
-  document.getElementById('stat-active').textContent = usersData.filter(u=>u.status==='ACTIVE').length;
-  document.getElementById('stat-admins').textContent = usersData.filter(u=>u.role==='ADMIN').length;
+      // Normalizar id para sincronización de pestañas gemelas (TopNav y Sidebar)
+      let baseId = pageId;
+      if (pageId === 'dashboard') baseId = 'dashboard';
+      if (pageId === 'jugadores') baseId = 'jugadores';
+      if (pageId === 'usuarios') baseId = 'usuarios';
+      if (pageId === 'pronostico') baseId = 'pronostico';
 
-  const start = (usersPage - 1) * usersLimit;
-  const pageData = filteredUsers.slice(start, start + usersLimit);
+      // Toggle active pages
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const targetPage = document.getElementById('page-' + baseId);
+      if (targetPage) targetPage.classList.add('active');
 
-  pageData.forEach(u => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
+      // Sync Sidebar active state
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      const activeLink = document.getElementById('nav-' + baseId);
+      if (activeLink) activeLink.classList.add('active');
+
+      // Sync Topnav tab bar highlights
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      if (baseId === 'dashboard')   document.getElementById('tnav-dashboard')?.classList.add('active');
+      if (baseId === 'usuarios')    document.getElementById('tnav-gestion')?.classList.add('active');
+      if (baseId === 'pronostico')  document.getElementById('tnav-pronostico')?.classList.add('active');
+
+      // Cargar equipos disponibles al entrar a pronóstico
+      if (baseId === 'pronostico') cargarEquiposPronostico();
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebar-overlay').classList.toggle('open');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('open');
+    }
+
+    // ════════════════════════════════════════════════════
+    // MODAL SYSTEM
+    // ════════════════════════════════════════════════════
+    function openModal(id) {
+      document.getElementById(id)?.classList.add('open');
+    }
+    function closeModal(id) {
+      document.getElementById(id)?.classList.remove('open');
+    }
+
+    // ════════════════════════════════════════════════════
+    // TOAST NOTIFICATIONS
+    // ════════════════════════════════════════════════════
+    let toastTimeout;
+    function showToast(text, iconName = 'info') {
+      const t = document.getElementById('toast');
+      const tIcon = document.getElementById('toast-icon');
+      const tText = document.getElementById('toast-text');
+
+      if (!t) return;
+
+      tIcon.textContent = iconName;
+      tText.textContent = text;
+
+      t.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // ════════════════════════════════════════════════════
+    // TABLEAU PUBLIC INTERACTION
+    // ════════════════════════════════════════════════════
+    function selectTab(btn, viewName, labelText) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('current-tab-label').textContent = labelText;
+
+      // Mapeo dinámico de dashboards/hojas en la URL incrustada
+      let urlMap = {
+        'hoja1': 'Hoja1', 'hoja2': 'Hoja2', 'hoja3': 'Hoja3', 'hoja4': 'Hoja4', 'hoja5': 'Hoja5',
+        'dash1': 'Dashboard1', 'dash2': 'Dashboard2', 'dash3': 'Dashboard3'
+      };
+      const targetView = urlMap[viewName] || 'Dashboard1';
+      document.getElementById('tableau-frame').src = `https://public.tableau.com/views/AppNBA2/${targetView}?:embed=y&:showVizHome=no&:tabs=no&:toolbar=bottom&:device=desktop&:animate_transition=yes`;
+    }
+
+    function toggleFullscreen() {
+      const card = document.getElementById('tableau-card');
+      if (!document.fullscreenElement) {
+        card.requestFullscreen().catch(err => {
+          showToast(`Error de pantalla completa: ${err.message}`, 'error');
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function openTableauPublic() {
+      window.open('https://public.tableau.com/views/AppNBA2/Dashboard1', '_blank');
+    }
+
+    // ════════════════════════════════════════════════════
+    // ABM GESTIÓN: USUARIOS (MOCK FRONTEND)
+    // ════════════════════════════════════════════════════
+    async function cargarUsuarios() {
+      const response =
+        await fetch(`${BACKEND_URL}/usuarios/`);
+
+      const data = await response.json();
+
+      usersData = data.map(u => ({
+        id: u.id,
+        name: u.nombre,
+        email: u.correo,
+        role: u.rol,
+        status: u.estado
+      }));
+
+      filteredUsers = [...usersData];
+
+      console.log(usersData);
+
+      renderUsers();
+    }
+
+
+    function renderUsers() {
+      const tbody = document.getElementById('users-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      // Actualizar contadores analíticos superiores
+      document.getElementById('stat-total').textContent = usersData.length;
+      document.getElementById('stat-active').textContent = usersData.filter(u => u.status === 'ACTIVE').length;
+      document.getElementById('stat-admins').textContent = usersData.filter(u => u.role === 'ADMIN').length;
+
+      const start = (usersPage - 1) * usersLimit;
+      const pageData = filteredUsers.slice(start, start + usersLimit);
+
+      pageData.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
       <td style="font-weight:600;color:#ffb874;">#${u.id}</td>
       <td style="font-weight:500;color:#e2e2e8;">${u.name}</td>
       <td style="color:#e2bfb6;opacity:.8;">${u.email}</td>
@@ -926,33 +1676,33 @@ function renderUsers() {
         </div>
       </td>
     `;
-    tbody.appendChild(tr);
-  });
+        tbody.appendChild(tr);
+      });
 
-  document.getElementById('users-count').textContent = `Mostrando ${Math.min(start+1, filteredUsers.length)}-${Math.min(start+usersLimit, filteredUsers.length)} de ${filteredUsers.length} cuentas`;
-  renderPagination('users-pagination', filteredUsers.length, usersLimit, usersPage, (p) => { usersPage = p; renderUsers(); });
-}
+      document.getElementById('users-count').textContent = `Mostrando ${Math.min(start + 1, filteredUsers.length)}-${Math.min(start + usersLimit, filteredUsers.length)} de ${filteredUsers.length} cuentas`;
+      renderPagination('users-pagination', filteredUsers.length, usersLimit, usersPage, (p) => { usersPage = p; renderUsers(); });
+    }
 
-function filterUsers() {
-  const q = document.getElementById('user-search').value.toLowerCase();
-  filteredUsers = usersData.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-  usersPage = 1;
-  renderUsers();
-}
+    function filterUsers() {
+      const q = document.getElementById('user-search').value.toLowerCase();
+      filteredUsers = usersData.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+      usersPage = 1;
+      renderUsers();
+    }
 
-function filterRole(btn, role) {
-  document.querySelectorAll('#page-usuarios .filter-pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  filteredUsers = role === 'ALL' ? [...usersData] : usersData.filter(u => u.role === role);
-  usersPage = 1;
-  renderUsers();
-}
+    function filterRole(btn, role) {
+      document.querySelectorAll('#page-usuarios .filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filteredUsers = role === 'ALL' ? [...usersData] : usersData.filter(u => u.role === role);
+      usersPage = 1;
+      renderUsers();
+    }
 
-function openAddUser() {
-  // Asegura la inyección estándar si veníamos del login modificado
-  const modal = document.getElementById('user-modal');
-  modal.removeAttribute('data-bloqueado');
-  modal.querySelector('.modal').innerHTML = `
+    function openAddUser() {
+      // Asegura la inyección estándar si veníamos del login modificado
+      const modal = document.getElementById('user-modal');
+      modal.removeAttribute('data-bloqueado');
+      modal.querySelector('.modal').innerHTML = `
     <div class="modal-header">
       <h3 class="modal-title" id="user-modal-title">NUEVO USUARIO</h3>
       <button class="btn-icon" onclick="closeModal('user-modal')"><span class="material-symbols-outlined">close</span></button>
@@ -966,6 +1716,25 @@ function openAddUser() {
       <label class="form-label">Correo electrónico *</label>
       <input class="form-input" id="user-email" type="email" placeholder="correo@analytics.nba.com"/>
     </div>
+    <div class="form-group">
+  <label class="form-label">Contraseña *</label>
+  <input
+    class="form-input"
+    id="user-password"
+    type="password"
+    placeholder="Ingrese una contraseña"
+  />
+</div>
+
+<div class="form-group">
+  <label class="form-label">Confirmar contraseña *</label>
+  <input
+    class="form-input"
+    id="user-confirm-password"
+    type="password"
+    placeholder="Repita la contraseña"
+  />
+</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div class="form-group">
         <label class="form-label">Rol</label>
@@ -989,78 +1758,190 @@ function openAddUser() {
     </div>
   `;
 
-  document.getElementById('user-modal-title').textContent = 'NUEVO USUARIO';
-  document.getElementById('user-edit-id').value = '';
-  document.getElementById('user-name').value = '';
-  document.getElementById('user-email').value = '';
-  document.getElementById('user-role').value = 'VIEWER';
-  document.getElementById('user-status').value = 'ACTIVE';
-  openModal('user-modal');
-}
+      document.getElementById('user-modal-title').textContent = 'NUEVO USUARIO';
+      document.getElementById('user-edit-id').value = '';
+      document.getElementById('user-name').value = '';
+      document.getElementById('user-email').value = '';
+      document.getElementById('user-password').value = '';
+      document.getElementById('user-confirm-password').value = '';
+      document.getElementById('user-role').value = 'VIEWER';
+      document.getElementById('user-status').value = 'ACTIVE';
+      openModal('user-modal');
+    }
 
-function openEditUser(id) {
-  openAddUser(); // Resetea e inyecta la estructura limpia HTML primero
-  const u = usersData.find(x => x.id === id);
-  if(!u) return;
-  document.getElementById('user-modal-title').textContent = 'MODIFICAR CUENTA';
-  document.getElementById('user-edit-id').value = u.id;
-  document.getElementById('user-name').value = u.name;
-  document.getElementById('user-email').value = u.email;
-  document.getElementById('user-role').value = u.role;
-  document.getElementById('user-status').value = u.status;
-}
+    function openEditUser(id) {
+      openAddUser(); // Resetea e inyecta la estructura limpia HTML primero
+      const u = usersData.find(x => x.id === id);
+      if (!u) return;
+      document.getElementById('user-modal-title').textContent = 'MODIFICAR CUENTA';
+      document.getElementById('user-edit-id').value = u.id;
+      document.getElementById('user-name').value = u.name;
+      document.getElementById('user-email').value = u.email;
+      document.getElementById('user-role').value = u.role;
+      document.getElementById('user-status').value = u.status;
+    }
 
-function saveUser() {
-  const nid = document.getElementById('user-edit-id').value;
-  const name = document.getElementById('user-name').value.trim();
-  const email = document.getElementById('user-email').value.trim();
-  const role = document.getElementById('user-role').value;
-  const status = document.getElementById('user-status').value;
+    async function saveUser() {
+      const nid = document.getElementById('user-edit-id').value;
+      const name = document.getElementById('user-name').value.trim();
+      const email = document.getElementById('user-email').value.trim();
+      const role = document.getElementById('user-role').value;
+      const status = document.getElementById('user-status').value;
+      const password =
+        document.getElementById('user-password')?.value;
 
-  if(!name || !email) { showToast('Por favor complete campos obligatorios','warning'); return; }
+      const confirmPassword =
+        document.getElementById('user-confirm-password')?.value;
 
-  if(nid) {
-    // Edit
-    const idx = usersData.findIndex(x=>x.id == nid);
-    if(idx !== -1) usersData[idx] = { id: parseInt(nid), name, email, role, status };
-    showToast('Cuenta actualizada con éxito','check_circle');
-  } else {
-    // Create new
-    const nextId = usersData.length > 0 ? Math.max(...usersData.map(x=>x.id))+1 : 101;
-    usersData.push({ id: nextId, name, email, role, status });
-    showToast('Nuevo usuario dado de alta','check_circle');
-  }
-  closeModal('user-modal');
-  filterUsers();
-}
+      if (!name || !email) {
+        showToast(
+          'Por favor complete campos obligatorios',
+          'warning'
+        );
+        return;
+      }
 
-function deleteUser(id) {
-  if(confirm('¿Está seguro de eliminar esta cuenta permanentemente del sistema?')) {
-    usersData = usersData.filter(x => x.id !== id);
-    showToast('Cuenta removida de la base de datos','delete');
-    filterUsers();
-  }
-}
+      if (!nid) {
 
-// ════════════════════════════════════════════════════
-// ABM GESTIÓN: JUGADORES (MOCK FRONTEND)
-// ════════════════════════════════════════════════════
-function renderPlayers() {
-  const tbody = document.getElementById('players-tbody');
-  if(!tbody) return;
-  tbody.innerHTML = '';
+        if (!password || !confirmPassword) {
+          showToast(
+            'Debe ingresar y confirmar la contraseña',
+            'warning'
+          );
+          return;
+        }
 
-  const start = (playersPage - 1) * playersLimit;
-  const pageData = filteredPlayersList.slice(start, start + playersLimit);
+        if (password !== confirmPassword) {
+          showToast(
+            'Las contraseñas no coinciden',
+            'error'
+          );
+          return;
+        }
 
-  pageData.forEach((p, index) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
+        if (password.length < 6) {
+          showToast(
+            'La contraseña debe tener al menos 6 caracteres',
+            'warning'
+          );
+          return;
+        }
+      }
+
+      const usuario = {
+        nombre: name,
+        apellido: '',
+        correo: email,
+        rol: role,
+        estado: status
+      };
+
+
+
+      try {
+        let response;
+
+        if (nid) {
+          // EDITAR
+          response = await fetch(
+            `${BACKEND_URL}/usuarios/${nid}`,
+            {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(usuario)
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error('Error al actualizar usuario');
+          }
+
+          showToast(
+            'Cuenta actualizada con éxito',
+            'check_circle'
+          );
+
+        } else {
+          // CREAR
+          response = await fetch(
+            `${BACKEND_URL}/usuarios/registro`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                ...usuario,
+                contrasena: password
+              })
+            }
+          );
+
+          if (!response.ok) {
+            const error = await response.json();
+
+            console.log("BODY ENVIADO:", {
+              ...usuario,
+              contrasena: '123456'
+            });
+
+            console.log("ERROR BACKEND:", error);
+
+            throw new Error(
+              JSON.stringify(error, null, 2)
+            );
+          }
+
+          showToast(
+            'Nuevo usuario dado de alta',
+            'check_circle'
+          );
+        }
+
+        closeModal('user-modal');
+
+        // Recargar desde la BD
+        await cargarUsuarios();
+
+      } catch (error) {
+        console.error(error);
+
+        showToast(
+          error.message,
+          'error'
+        );
+      }
+    }
+
+    function deleteUser(id) {
+      if (confirm('¿Está seguro de eliminar esta cuenta permanentemente del sistema?')) {
+        usersData = usersData.filter(x => x.id !== id);
+        showToast('Cuenta removida de la base de datos', 'delete');
+        filterUsers();
+      }
+    }
+
+    // ════════════════════════════════════════════════════
+    // ABM GESTIÓN: JUGADORES (MOCK FRONTEND)
+    // ════════════════════════════════════════════════════
+    function renderPlayers() {
+      const tbody = document.getElementById('players-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const start = (playersPage - 1) * playersLimit;
+      const pageData = filteredPlayersList.slice(start, start + playersLimit);
+
+      pageData.forEach((p, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
       <td style="color:#e2bfb6;opacity:.5;font-size:11px;">${start + index + 1}</td>
       <td>
         <div style="display:flex;align-items:center;gap:9px;">
           <div style="width:26px;height:26px;background:#1e2024;border:1px solid #5a413a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#ffb874;">
-            ${p.name.split(' ').map(n=>n[0]).join('')}
+            ${p.name.split(' ').map(n => n[0]).join('')}
           </div>
           <span style="font-weight:600;color:#e2e2e8;">${p.name}</span>
         </div>
@@ -1080,264 +1961,372 @@ function renderPlayers() {
         </div>
       </td>
     `;
-    tbody.appendChild(tr);
-  });
+        tbody.appendChild(tr);
+      });
 
-  document.getElementById('players-count').textContent = `Mostrando ${Math.min(start+1, filteredPlayersList.length)}-${Math.min(start+playersLimit, filteredPlayersList.length)} de ${filteredPlayersList.length} registros`;
-  renderPagination('players-pagination', filteredPlayersList.length, playersLimit, playersPage, (p) => { playersPage = p; renderPlayers(); });
-}
+      document.getElementById('players-count').textContent = `Mostrando ${Math.min(start + 1, filteredPlayersList.length)}-${Math.min(start + playersLimit, filteredPlayersList.length)} de ${filteredPlayersList.length} registros`;
+      renderPagination('players-pagination', filteredPlayersList.length, playersLimit, playersPage, (p) => { playersPage = p; renderPlayers(); });
+    }
 
-function filterPlayers() {
-  const q = document.getElementById('player-search').value.toLowerCase();
-  filteredPlayersList = playersData.filter(p => {
-    const matchQuery = p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q);
-    const matchPos = currentPlayerFilterPos === 'ALL' || p.pos === currentPlayerFilterPos;
-    return matchQuery && matchPos;
-  });
-  playersPage = 1;
-  renderPlayers();
-}
+    function filterPlayers() {
+      const q = document.getElementById('player-search').value.toLowerCase();
+      filteredPlayersList = playersData.filter(p => {
+        const matchQuery = p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q);
+        const matchPos = currentPlayerFilterPos === 'ALL' || p.pos === currentPlayerFilterPos;
+        return matchQuery && matchPos;
+      });
+      playersPage = 1;
+      renderPlayers();
+    }
 
-function filterPos(btn, pos) {
-  document.querySelectorAll('#page-jugadores .filter-pill').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentPlayerFilterPos = pos;
-  filterPlayers();
-}
+    function filterPos(btn, pos) {
+      document.querySelectorAll('#page-jugadores .filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPlayerFilterPos = pos;
+      filterPlayers();
+    }
 
-function sortPlayers(criteria) {
-  if(criteria === 'per') playersData.sort((a,b)=>b.per - a.per);
-  if(criteria === 'ppg') playersData.sort((a,b)=>b.ppg - a.ppg);
-  if(criteria === 'name') playersData.sort((a,b)=>a.name.localeCompare(b.name));
-  if(criteria === 'team') playersData.sort((a,b)=>a.team.localeCompare(b.team));
-  filterPlayers();
-}
+    function sortPlayers(criteria) {
+      if (criteria === 'per') playersData.sort((a, b) => b.per - a.per);
+      if (criteria === 'ppg') playersData.sort((a, b) => b.ppg - a.ppg);
+      if (criteria === 'name') playersData.sort((a, b) => a.name.localeCompare(b.name));
+      if (criteria === 'team') playersData.sort((a, b) => a.team.localeCompare(b.team));
+      filterPlayers();
+    }
 
-function openAddPlayer() {
-  document.getElementById('player-modal-title').textContent = 'REGISTRAR NUEVA FICHA';
-  document.getElementById('player-edit-id').value = '';
-  document.getElementById('player-name').value = '';
-  document.getElementById('player-team').value = '';
-  document.getElementById('player-pos').value = 'G';
-  document.getElementById('player-ppg').value = '0.0';
-  document.getElementById('player-rpg').value = '0.0';
-  document.getElementById('player-apg').value = '0.0';
-  document.getElementById('player-per').value = '15.0';
-  document.getElementById('player-ts').value = '0.550';
-  document.getElementById('player-status').value = 'ACTIVE';
-  openModal('player-modal');
-}
+    function openAddPlayer() {
+      document.getElementById('player-modal-title').textContent = 'REGISTRAR NUEVA FICHA';
+      document.getElementById('player-edit-id').value = '';
+      document.getElementById('player-name').value = '';
+      document.getElementById('player-team').value = '';
+      document.getElementById('player-pos').value = 'G';
+      document.getElementById('player-ppg').value = '0.0';
+      document.getElementById('player-rpg').value = '0.0';
+      document.getElementById('player-apg').value = '0.0';
+      document.getElementById('player-per').value = '15.0';
+      document.getElementById('player-ts').value = '0.550';
+      document.getElementById('player-status').value = 'ACTIVE';
+      openModal('player-modal');
+    }
 
-function openEditPlayer(id) {
-  const p = playersData.find(x => x.id === id);
-  if(!p) return;
-  document.getElementById('player-modal-title').textContent = 'EDITAR FICHA TÉCNICA';
-  document.getElementById('player-edit-id').value = p.id;
-  document.getElementById('player-name').value = p.name;
-  document.getElementById('player-team').value = p.team;
-  document.getElementById('player-pos').value = p.pos;
-  document.getElementById('player-ppg').value = p.ppg;
-  document.getElementById('player-rpg').value = p.rpg;
-  document.getElementById('player-apg').value = p.apg;
-  document.getElementById('player-per').value = p.per;
-  document.getElementById('player-ts').value = p.ts;
-  document.getElementById('player-status').value = p.status;
-  openModal('player-modal');
-}
+    function openEditPlayer(id) {
+      const p = playersData.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('player-modal-title').textContent = 'EDITAR FICHA TÉCNICA';
+      document.getElementById('player-edit-id').value = p.id;
+      document.getElementById('player-name').value = p.name;
+      document.getElementById('player-team').value = p.team;
+      document.getElementById('player-pos').value = p.pos;
+      document.getElementById('player-ppg').value = p.ppg;
+      document.getElementById('player-rpg').value = p.rpg;
+      document.getElementById('player-apg').value = p.apg;
+      document.getElementById('player-per').value = p.per;
+      document.getElementById('player-ts').value = p.ts;
+      document.getElementById('player-status').value = p.status;
+      openModal('player-modal');
+    }
 
-function savePlayer() {
-  const pid = document.getElementById('player-edit-id').value;
-  const name = document.getElementById('player-name').value.trim();
-  const team = document.getElementById('player-team').value.trim().toUpperCase();
-  const pos = document.getElementById('player-pos').value;
-  const ppg = parseFloat(document.getElementById('player-ppg').value) || 0;
-  const rpg = parseFloat(document.getElementById('player-rpg').value) || 0;
-  const apg = parseFloat(document.getElementById('player-apg').value) || 0;
-  const per = parseFloat(document.getElementById('player-per').value) || 0;
-  const ts = parseFloat(document.getElementById('player-ts').value) || 0.5;
-  const status = document.getElementById('player-status').value;
+    function savePlayer() {
+      const pid = document.getElementById('player-edit-id').value;
+      const name = document.getElementById('player-name').value.trim();
+      const team = document.getElementById('player-team').value.trim().toUpperCase();
+      const pos = document.getElementById('player-pos').value;
+      const ppg = parseFloat(document.getElementById('player-ppg').value) || 0;
+      const rpg = parseFloat(document.getElementById('player-rpg').value) || 0;
+      const apg = parseFloat(document.getElementById('player-apg').value) || 0;
+      const per = parseFloat(document.getElementById('player-per').value) || 0;
+      const ts = parseFloat(document.getElementById('player-ts').value) || 0.5;
+      const status = document.getElementById('player-status').value;
 
-  if(!name || !team) { showToast('Nombre y Equipo son obligatorios','warning'); return; }
+      if (!name || !team) { showToast('Nombre y Equipo son obligatorios', 'warning'); return; }
 
-  if(pid) {
-    const idx = playersData.findIndex(x=>x.id == pid);
-    if(idx !== -1) playersData[idx] = { id: parseInt(pid), name, team, pos, ppg, rpg, apg, per, ts, status };
-    showToast('Ficha técnica modificada correctamente','check_circle');
-  } else {
-    const nextId = playersData.length > 0 ? Math.max(...playersData.map(x=>x.id))+1 : 1;
-    playersData.push({ id: nextId, name, team, pos, ppg, rpg, apg, per, ts, status });
-    showToast('Jugador agregado al dataset 2025','check_circle');
-  }
-  closeModal('player-modal');
-  filterPlayers();
-}
+      if (pid) {
+        const idx = playersData.findIndex(x => x.id == pid);
+        if (idx !== -1) playersData[idx] = { id: parseInt(pid), name, team, pos, ppg, rpg, apg, per, ts, status };
+        showToast('Ficha técnica modificada correctamente', 'check_circle');
+      } else {
+        const nextId = playersData.length > 0 ? Math.max(...playersData.map(x => x.id)) + 1 : 1;
+        playersData.push({ id: nextId, name, team, pos, ppg, rpg, apg, per, ts, status });
+        showToast('Jugador agregado al dataset 2025', 'check_circle');
+      }
+      closeModal('player-modal');
+      filterPlayers();
+    }
 
-function deletePlayer(id) {
-  if(confirm('¿Desea borrar el registro de este jugador de forma permanente?')) {
-    playersData = playersData.filter(x => x.id !== id);
-    showToast('Registro eliminado','delete');
-    filterPlayers();
-  }
-}
+    function deletePlayer(id) {
+      if (confirm('¿Desea borrar el registro de este jugador de forma permanente?')) {
+        playersData = playersData.filter(x => x.id !== id);
+        showToast('Registro eliminado', 'delete');
+        filterPlayers();
+      }
+    }
 
-function exportPlayers() {
-  showToast('Generando reporte estadístico CSV...','download');
-  setTimeout(()=> {
-    let csv = 'ID,Jugador,Equipo,Posicion,PPG,RPG,APG,PER,TS_Pct\n';
-    playersData.forEach(p=> csv+= `${p.id},"${p.name}",${p.team},${p.pos},${p.ppg},${p.rpg},${p.apg},${p.per},${p.ts}\n`);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const u = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = u; a.download = 'NBA_Analytics_Players_24_25.csv'; a.click();
-  }, 1000);
-}
+    function exportPlayers() {
+      showToast('Generando reporte estadístico CSV...', 'download');
+      setTimeout(() => {
+        let csv = 'ID,Jugador,Equipo,Posicion,PPG,RPG,APG,PER,TS_Pct\n';
+        playersData.forEach(p => csv += `${p.id},"${p.name}",${p.team},${p.pos},${p.ppg},${p.rpg},${p.apg},${p.per},${p.ts}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const u = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = u; a.download = 'NBA_Analytics_Players_24_25.csv'; a.click();
+      }, 1000);
+    }
 
-// ════════════════════════════════════════════════════
-// REUSABLE COMPONENT: PAGINATION GENERATOR
-// ════════════════════════════════════════════════════
-function renderPagination(containerId, totalItems, limit, currentPage, onPageClick) {
-  const container = document.getElementById(containerId);
-  if(!container) return;
-  container.innerHTML = '';
+    // ════════════════════════════════════════════════════
+    // REUSABLE COMPONENT: PAGINATION GENERATOR
+    // ════════════════════════════════════════════════════
+    function renderPagination(containerId, totalItems, limit, currentPage, onPageClick) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
 
-  const totalPages = Math.ceil(totalItems / limit);
-  if(totalPages <= 1) return;
+      const totalPages = Math.ceil(totalItems / limit);
+      if (totalPages <= 1) return;
 
-  // Botón Anterior
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'page-btn';
-  prevBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px;">chevron_left</span>';
-  prevBtn.disabled = currentPage === 1;
-  prevBtn.onclick = () => onPageClick(currentPage - 1);
-  container.appendChild(prevBtn);
+      // Botón Anterior
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'page-btn';
+      prevBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px;">chevron_left</span>';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => onPageClick(currentPage - 1);
+      container.appendChild(prevBtn);
 
-  // Números de Página
-  for(let i=1; i<=totalPages; i++) {
-    const btn = document.createElement('button');
-    btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-    btn.textContent = i;
-    btn.onclick = () => onPageClick(i);
-    container.appendChild(btn);
-  }
+      // Números de Página
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+        btn.textContent = i;
+        btn.onclick = () => onPageClick(i);
+        container.appendChild(btn);
+      }
 
-  // Botón Siguiente
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'page-btn';
-  nextBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px;">chevron_right</span>';
-  nextBtn.disabled = currentPage === totalPages;
-  nextBtn.onclick = () => onPageClick(currentPage + 1);
-  container.appendChild(nextBtn);
-}
+      // Botón Siguiente
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'page-btn';
+      nextBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px;">chevron_right</span>';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.onclick = () => onPageClick(currentPage + 1);
+      container.appendChild(nextBtn);
+    }
 
-// ════════════════════════════════════════════════════
-// CHARTS GENERATION Engine (DOM Bars)
-// ════════════════════════════════════════════════════
-function initCharts() {
-  const data3pt = [35.2, 36.7, 35.8, 36.1, 37.5, 38.2];
-  const dataPpg = [111.2, 112.1, 110.6, 114.2, 113.9, 114.8];
+    // ════════════════════════════════════════════════════
+    // CHARTS GENERATION Engine (DOM Bars)
+    // ════════════════════════════════════════════════════
+    function initCharts() {
+      const data3pt = [35.2, 36.7, 35.8, 36.1, 37.5, 38.2];
+      const dataPpg = [111.2, 112.1, 110.6, 114.2, 113.9, 114.8];
 
-  const c3 = document.getElementById('chart-3pt');
-  const cp = document.getElementById('chart-ppg');
+      const c3 = document.getElementById('chart-3pt');
+      const cp = document.getElementById('chart-ppg');
 
-  if(c3) {
-    c3.innerHTML = '';
-    data3pt.forEach(v => {
-      const h = ((v - 30) / 10) * 100; // Normalización básica para escalado visual
-      const b = document.createElement('div');
-      b.className = 'bar'; b.style.height = `${Math.max(15, h)}%`; b.style.flex = '1';
-      b.title = `% Global: ${v}%`;
-      c3.appendChild(b);
-    });
-  }
+      if (c3) {
+        c3.innerHTML = '';
+        data3pt.forEach(v => {
+          const h = ((v - 30) / 10) * 100; // Normalización básica para escalado visual
+          const b = document.createElement('div');
+          b.className = 'bar'; b.style.height = `${Math.max(15, h)}%`; b.style.flex = '1';
+          b.title = `% Global: ${v}%`;
+          c3.appendChild(b);
+        });
+      }
 
-  if(cp) {
-    cp.innerHTML = '';
-    dataPpg.forEach(v => {
-      const h = ((v - 100) / 18) * 100;
-      const b = document.createElement('div');
-      b.className = 'bar'; b.style.height = `${Math.max(15, h)}%`; b.style.flex = '1';
-      b.style.background = '#e8512a';
-      b.title = `Promedio PPG: ${v}`;
-      cp.appendChild(b);
-    });
-  }
+      if (cp) {
+        cp.innerHTML = '';
+        dataPpg.forEach(v => {
+          const h = ((v - 100) / 18) * 100;
+          const b = document.createElement('div');
+          b.className = 'bar'; b.style.height = `${Math.max(15, h)}%`; b.style.flex = '1';
+          b.style.background = '#e8512a';
+          b.title = `Promedio PPG: ${v}`;
+          cp.appendChild(b);
+        });
+      }
 
-  // Lista lateral de Líderes PER
-  const perList = document.getElementById('per-list');
-  if(perList) {
-    perList.innerHTML = '';
-    const top5 = [...playersData].sort((a,b)=>b.per-a.per).slice(0,5);
-    top5.forEach((p, idx) => {
-      const row = document.createElement('div');
-      row.style = 'display:flex; justify-content:space-between; font-size:12px; border-bottom:1px solid rgba(90,65,58,0.2); padding-bottom:3px;';
-      row.innerHTML = `
-        <span style="color:#e2e2e8; font-weight:500;">${idx+1}. ${p.name} (${p.team})</span>
+      // Lista lateral de Líderes PER
+      const perList = document.getElementById('per-list');
+      if (perList) {
+        perList.innerHTML = '';
+        const top5 = [...playersData].sort((a, b) => b.per - a.per).slice(0, 5);
+        top5.forEach((p, idx) => {
+          const row = document.createElement('div');
+          row.style = 'display:flex; justify-content:space-between; font-size:12px; border-bottom:1px solid rgba(90,65,58,0.2); padding-bottom:3px;';
+          row.innerHTML = `
+        <span style="color:#e2e2e8; font-weight:500;">${idx + 1}. ${p.name} (${p.team})</span>
         <span style="color:#ffb874; font-weight:700;">${p.per.toFixed(1)}</span>
       `;
-      perList.appendChild(row);
-    });
-  }
-}
-
-// ════════════════════════════════════════════════════
-// SEARCH CONTEXT ROUTER
-// ════════════════════════════════════════════════════
-function handleSearch(q) {
-  if(!q) return;
-  const ql=q.toLowerCase();
-  if(playersData.some(p=>p.name.toLowerCase().includes(ql)||p.team.toLowerCase().includes(ql))) {
-    navigate('jugadores'); document.getElementById('player-search').value=q; filterPlayers();
-  } else if(usersData.some(u=>u.name.toLowerCase().includes(ql)||u.email.toLowerCase().includes(ql))) {
-    navigate('usuarios'); document.getElementById('user-search').value=q; filterUsers();
-  } else { showToast('Sin resultados para "'+q+'"','search'); }
-}
-
-// ════════════════════════════════════════════════════
-// RESPONSIVE KPI grid
-// ════════════════════════════════════════════════════
-function adjustKpiGrid() {
-  const g=document.getElementById('kpi-grid');
-  if(g) g.style.gridTemplateColumns = window.innerWidth<640 ? 'repeat(2,1fr)' : 'repeat(4,1fr)';
-}
-
-// ════════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  // Verificar si hay sesión guardada de antes
-  const sesionActiva = localStorage.getItem('nba_user_id') ? true : false;
-  actualizarEstadoAutenticacion(sesionActiva);
-
-  initCharts(); renderUsers(); renderPlayers(); adjustKpiGrid();
-  window.addEventListener('resize', adjustKpiGrid);
-  
-  // Fullscreen label update
-  document.addEventListener('fullscreenchange', () => {
-    const fsBtnIcon = document.querySelector('#tableau-card .btn-icon span');
-    if(fsBtnIcon) fsBtnIcon.textContent = document.fullscreenElement ? 'fullscreen_exit' : 'fullscreen';
-  });
-});
-
-// Listener global de clics modificado para respetar el login abierto
-window.addEventListener('click', (e) => {
-  const container = document.getElementById('auth-container');
-  const dropdown = document.getElementById('logout-dropdown');
-  
-  // Manejo del dropdown de cerrar sesión
-  if (container && !container.contains(e.target) && dropdown) {
-    dropdown.classList.add('hidden');
-  }
-
-  // INTERCEPCIÓN DEL CLIC AFUERA PARA EL LOGIN
-  const userModal = document.getElementById('user-modal');
-  if (userModal && userModal.classList.contains('open') && userModal.getAttribute('data-bloqueado') === 'true') {
-    // Si el clic ocurrió exactamente en el overlay (el fondo oscuro exterior)
-    if (e.target === userModal) {
-      e.stopPropagation(); // Frenamos el evento para que no se ejecute el cierre nativo del front
+          perList.appendChild(row);
+        });
+      }
     }
-  }
-});
-</script>
+
+    // ════════════════════════════════════════════════════
+    // SEARCH CONTEXT ROUTER
+    // ════════════════════════════════════════════════════
+    function handleSearch(q) {
+      if (!q) return;
+      const ql = q.toLowerCase();
+      if (playersData.some(p => p.name.toLowerCase().includes(ql) || p.team.toLowerCase().includes(ql))) {
+        navigate('jugadores'); document.getElementById('player-search').value = q; filterPlayers();
+      } else if (usersData.some(u => u.name.toLowerCase().includes(ql) || u.email.toLowerCase().includes(ql))) {
+        navigate('usuarios'); document.getElementById('user-search').value = q; filterUsers();
+      } else { showToast('Sin resultados para "' + q + '"', 'search'); }
+    }
+
+    // ════════════════════════════════════════════════════
+    // RESPONSIVE KPI grid
+    // ════════════════════════════════════════════════════
+    function adjustKpiGrid() {
+      const g = document.getElementById('kpi-grid');
+      if (g) g.style.gridTemplateColumns = window.innerWidth < 640 ? 'repeat(2,1fr)' : 'repeat(4,1fr)';
+    }
+
+    // ════════════════════════════════════════════════════
+    // INIT
+    // ════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', () => {
+      // Verificar si hay sesión guardada de antes
+      const sesionActiva = localStorage.getItem('nba_user_id') ? true : false;
+      actualizarEstadoAutenticacion(sesionActiva);
+
+      initCharts(); renderUsers(); renderPlayers(); adjustKpiGrid();
+      window.addEventListener('resize', adjustKpiGrid);
+
+      // Fullscreen label update
+      document.addEventListener('fullscreenchange', () => {
+        const fsBtnIcon = document.querySelector('#tableau-card .btn-icon span');
+        if (fsBtnIcon) fsBtnIcon.textContent = document.fullscreenElement ? 'fullscreen_exit' : 'fullscreen';
+      });
+    });
+
+    // Listener global de clics modificado para respetar el login abierto
+    window.addEventListener('click', (e) => {
+      const container = document.getElementById('auth-container');
+      const dropdown = document.getElementById('logout-dropdown');
+
+      // Manejo del dropdown de cerrar sesión
+      if (container && !container.contains(e.target) && dropdown) {
+        dropdown.classList.add('hidden');
+      }
+
+      // INTERCEPCIÓN DEL CLIC AFUERA PARA EL LOGIN
+      const userModal = document.getElementById('user-modal');
+      if (userModal && userModal.classList.contains('open') && userModal.getAttribute('data-bloqueado') === 'true') {
+        // Si el clic ocurrió exactamente en el overlay (el fondo oscuro exterior)
+        if (e.target === userModal) {
+          e.stopPropagation(); // Frenamos el evento para que no se ejecute el cierre nativo del front
+        }
+      }
+    });
+    // ════════════════════════════════════════════════════
+    // PRONÓSTICO — conexión con POST /predicciones/simular
+    // ════════════════════════════════════════════════════
+
+    // Equipos NBA disponibles en el dataset (abreviaciones del backend)
+    const NBA_TEAMS = [
+      'ATL','BOS','BRK','CHI','CHO','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'
+    ];
+
+    function cargarEquiposPronostico() {
+      const selLocal     = document.getElementById('prono-local');
+      const selVisitante = document.getElementById('prono-visitante');
+      if (!selLocal || selLocal.options.length > 1) return; // ya cargados
+
+      NBA_TEAMS.forEach(t => {
+        selLocal.add(new Option(t, t));
+        selVisitante.add(new Option(t, t));
+      });
+    }
+
+    async function simularPronostico() {
+      const local     = document.getElementById('prono-local').value;
+      const visitante = document.getElementById('prono-visitante').value;
+      const userId    = localStorage.getItem('nba_user_id');
+
+      // Ocultar resultados anteriores
+      document.getElementById('prono-resultado').style.display = 'none';
+      document.getElementById('prono-error').style.display     = 'none';
+      document.getElementById('prono-id-row').style.display    = 'none';
+
+      if (!userId) {
+        mostrarLoginEnModal();
+        return;
+      }
+      if (!local || !visitante) {
+        showToast('Seleccioná ambos equipos antes de simular', 'warning'); return;
+      }
+      if (local === visitante) {
+        showToast('Los equipos deben ser distintos', 'warning'); return;
+      }
+
+      // Estado de carga en el botón
+      const btn = document.getElementById('btn-simular');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:17px;animation:spin .8s linear infinite;">progress_activity</span> Simulando...';
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/predicciones/simular`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id_usuario:       parseInt(userId),
+            equipo_local:     local,
+            equipo_visitante: visitante
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || 'Error al simular el partido');
+        }
+
+        const r = data.resultado;
+
+        // Rellenar tarjeta local
+        document.getElementById('res-local-nombre').textContent  = r.local.nombre;
+        document.getElementById('res-local-season').textContent  = `Temporada ${r.local.ultima_temporada}`;
+        document.getElementById('res-local-ppg').textContent     = r.local.puntos_promedio;
+
+        // Rellenar tarjeta visitante
+        document.getElementById('res-visitante-nombre').textContent = r.visitante.nombre;
+        document.getElementById('res-visitante-season').textContent = `Temporada ${r.visitante.ultima_temporada}`;
+        document.getElementById('res-visitante-ppg').textContent    = r.visitante.puntos_promedio;
+
+        // Resaltar ganador con borde naranja
+        const cardLocal     = document.getElementById('card-local');
+        const cardVisitante = document.getElementById('card-visitante');
+        cardLocal.style.borderColor     = r.ganador_predicho === r.local.nombre     ? '#ffb874' : '#5a413a';
+        cardVisitante.style.borderColor = r.ganador_predicho === r.visitante.nombre ? '#ffb874' : '#5a413a';
+
+        // Banner ganador
+        document.getElementById('res-ganador').textContent = r.ganador_predicho;
+        document.getElementById('res-descripcion').textContent =
+          `${r.local.nombre} ${r.local.puntos_promedio} pts/j  ·  ${r.visitante.nombre} ${r.visitante.puntos_promedio} pts/j`;
+
+        // ID predicción
+        if (r.id_prediccion) {
+          document.getElementById('res-id-prediccion').textContent = r.id_prediccion;
+          document.getElementById('prono-id-row').style.display = 'block';
+        }
+
+        document.getElementById('prono-resultado').style.display = 'block';
+        showToast(`Ganador predicho: ${r.ganador_predicho}`, 'emoji_events');
+
+      } catch (err) {
+        document.getElementById('prono-error-msg').textContent = err.message;
+        document.getElementById('prono-error').style.display   = 'block';
+        showToast('Error en la simulación', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:17px;">sports_score</span> Simular Partido';
+      }
+    }
+
+  </script>
 
 </body>
+
 </html>
