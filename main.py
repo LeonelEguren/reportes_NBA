@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine, Float, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
+from fastapi.middleware.cors import CORSMiddleware
 import bcrypt
 from pydantic import BaseModel, EmailStr
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
@@ -80,9 +80,6 @@ class HistorialDB(Base):
     fecha = Column(DateTime, default=datetime.datetime.utcnow)
     id_usuario = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
 
-# Asegurar la creación de todas las tablas en la base de datos local
-Base.metadata.create_all(bind=engine)
-
 
 # ==========================================
 # ESQUEMAS DE VALIDACIÓN (Pydantic)
@@ -132,14 +129,44 @@ def get_db():
 # ==========================================
 app = FastAPI(title="NBA Predictor API")
 
-# ✅ CORS MIDDLEWARE - Permite peticiones desde el navegador
+# Habilitar CORS para conectar con el Live Server de Frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción: especificar orígenes
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Asegurar la creación de todas las tablas en la base de datos local al iniciar la app
+Base.metadata.create_all(bind=engine)
+
+
+# ENDPOINT DE CONSULTA DE EQUIPOS (DICCIONARIO ESTÁTICO)
+@app.get("/equipos", status_code=200)
+def obtener_equipos_disponibles(db: Session = Depends(get_db)):
+    NOMBRES_EQUIPOS = {
+        "ATL": "Atlanta Hawks", "BOS": "Boston Celtics", "BKN": "Brooklyn Nets",
+        "CHA": "Charlotte Hornets", "CHI": "Chicago Bulls", "CLE": "Cleveland Cavaliers",
+        "DAL": "Dallas Mavericks", "DEN": "Denver Nuggets", "DET": "Detroit Pistons",
+        "GSW": "Golden State Warriors", "HOU": "Houston Rockets", "IND": "Indiana Pacers",
+        "LAC": "Los Angeles Clippers", "LAL": "Los Angeles Lakers", "MEM": "Memphis Grizzlies",
+        "MIA": "Miami Heat", "MIL": "Milwaukee Bucks", "MIN": "Minnesota Timberwolves",
+        "NOP": "New Orleans Pelicans", "NYK": "New York Knicks", "OKC": "Oklahoma Thunder",
+        "ORL": "Orlando Magic", "PHI": "Philadelphia 76ers", "PHX": "Phoenix Suns",
+        "POR": "Portland Trail Blazers", "SAC": "Sacramento Kings", "SAS": "San Antonio Spurs",
+        "TOR": "Toronto Raptors", "UTA": "Utah Jazz", "WAS": "Washington Wizards"
+    }
+    equipos_db = db.query(NBATeamStatsDB.team).distinct().all()
+    codigos_existentes = [equipo[0] for equipo in equipos_db]
+    codigos_existentes.sort()
+
+    resultado = []
+    for codigo in codigos_existentes:
+        nombre_completo = NOMBRES_EQUIPOS.get(codigo, "Equipo Desconocido")
+        resultado.append({"nombre": nombre_completo, "codigo": codigo})
+    
+    return {"status": "success", "total_equipos": len(resultado), "equipos": resultado}
 
 
 # RF-01: Creación de Cuenta (Hashear)
@@ -149,17 +176,14 @@ async def registrar_usuario(
     background_tasks: BackgroundTasks, 
     db: Session = Depends(get_db)
 ):
-    # 1. Validar si ya existe el correo
     db_user = db.query(UserDB).filter(UserDB.correo == user.correo).first()
     if db_user:
         raise HTTPException(status_code=400, detail="El correo ya está registrado")
     
-    # 2. Hashear la contraseña con bcrypt puro
     password_bytes = user.contrasena.encode('utf-8')
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(password_bytes, salt).decode('utf-8')
     
-    # 3. Guardar en la Base de Datos SQLite
     nuevo_usuario = UserDB(
         nombre=user.nombre, 
         apellido=user.apellido, 
@@ -170,7 +194,6 @@ async def registrar_usuario(
     db.commit()
     db.refresh(nuevo_usuario)
     
-    # 4. Estructurar el Correo Simple (Asunto y Cuerpo igual a tu pedido)
     message = MessageSchema(
         subject="cuenta creada exitosamente",
         recipients=[user.correo],
@@ -179,11 +202,6 @@ async def registrar_usuario(
     )
     
     fm = FastMail(conf)
-    
-    # Se deja comentado temporalmente el envío real por BackgroundTasks para evitar el Error 500 
-    # si no se definieron credenciales reales en ConnectionConfig.
-    # background_tasks.add_task(fm.send_message, message)
-    
     print(f" [CORREO SIMULADO] Cuenta creada exitosamente. Mail encolado para: {user.correo}")
     return {"mensaje": "Usuario creado con éxito", "id": nuevo_usuario.id}
 
@@ -195,7 +213,6 @@ def login(user_login: UserLogin, db: Session = Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     
-    # Comparamos el texto plano entrante contra el hash de la base de datos
     password_bytes = user_login.contrasena.encode('utf-8')
     hashed_bytes = db_user.contrasena.encode('utf-8')
     
@@ -208,7 +225,7 @@ def login(user_login: UserLogin, db: Session = Depends(get_db)):
     }
 
 
-# RF-03: Gestión de Perfil (Sin tocar contraseña)
+# RF-03: Gestión de Perfil
 @app.put("/usuarios/{user_id}/perfil")
 def actualizar_perfil(user_id: int, perfil_update: ProfileUpdate, db: Session = Depends(get_db)):
     db_user = db.query(UserDB).filter(UserDB.id == user_id).first()
@@ -218,7 +235,6 @@ def actualizar_perfil(user_id: int, perfil_update: ProfileUpdate, db: Session = 
     if perfil_update.nombre: db_user.nombre = perfil_update.nombre
     if perfil_update.apellido: db_user.apellido = perfil_update.apellido
     
-    # Si cambia el correo, verificar que no esté duplicado
     if perfil_update.correo and perfil_update.correo != db_user.correo:
         email_exists = db.query(UserDB).filter(UserDB.correo == perfil_update.correo).first()
         if email_exists:
@@ -229,20 +245,18 @@ def actualizar_perfil(user_id: int, perfil_update: ProfileUpdate, db: Session = 
     return {"mensaje": "Perfil actualizado correctamente"}
 
 
-# RF-04: Cambio de Contraseña (Validar y Re-hashear)
+# RF-04: Cambio de Contraseña
 @app.put("/usuarios/{user_id}/cambiar-contrasena")
 def cambiar_contrasena(user_id: int, pass_update: PasswordUpdate, db: Session = Depends(get_db)):
     db_user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
-    # Validar contraseña actual
     current_bytes = pass_update.contrasena_actual.encode('utf-8')
     db_bytes = db_user.contrasena.encode('utf-8')
     if not bcrypt.checkpw(current_bytes, db_bytes):
         raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
     
-    # Hashear la nueva
     new_bytes = pass_update.nueva_contrasena.encode('utf-8')
     salt = bcrypt.gensalt()
     db_user.contrasena = bcrypt.hashpw(new_bytes, salt).decode('utf-8')
@@ -256,7 +270,6 @@ def cambiar_contrasena(user_id: int, pass_update: PasswordUpdate, db: Session = 
 @app.post("/usuarios/recuperar-contrasena")
 def recuperar_contrasena(recovery: PasswordRecoveryRequest, db: Session = Depends(get_db)):
     db_user = db.query(UserDB).filter(UserDB.correo == recovery.correo).first()
-    
     if not db_user:
         raise HTTPException(status_code=404, detail="El correo no está registrado")
     
@@ -264,70 +277,33 @@ def recuperar_contrasena(recovery: PasswordRecoveryRequest, db: Session = Depend
     return {"mensaje": "Se ha enviado un correo para restablecer la contraseña"}
 
 
-# ==========================================
-# ENDPOINT PARA OBTENER EQUIPOS DISPONIBLES
-# ==========================================
-@app.get("/equipos", status_code=200)
-def obtener_equipos_disponibles(db: Session = Depends(get_db)):
-    # Buscamos todos los nombres únicos de la columna 'team' en la tabla de estadísticas
-    equipos_unicos = db.query(NBATeamStatsDB.team).distinct().all()
-    
-    # Como la consulta devuelve una lista de tuplas [(LAL,), (BOS,)], las limpiamos a strings simples
-    lista_equipos = [equipo[0] for equipo in equipos_unicos]
-    
-    # Opcional: los ordenamos alfabéticamente para que sea más fácil de leer
-    lista_equipos.sort()
-    
-    return {
-        "status": "success",
-        "total_equipos": len(lista_equipos),
-        "equipos": lista_equipos
-    }
-
-# ==========================================
 # ENDPOINT DE SIMULACIÓN Y PREDICCIONES
-# ==========================================
 @app.post("/predicciones/simular", status_code=200)
 def simular_y_guardar_prediccion(req: PrediccionRequest, db: Session = Depends(get_db)):
-    # 1. Validar que el usuario que intenta predecir exista en la base de datos
     usuario = db.query(UserDB).filter(UserDB.id == req.id_usuario).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    # 2. Buscar dinámicamente el año de la temporada más reciente del Equipo Local
-    ultima_temporada_local = db.query(func.max(NBATeamStatsDB.season))\
-        .filter(NBATeamStatsDB.team == req.equipo_local).scalar()
+    ultima_temporada_local = db.query(func.max(NBATeamStatsDB.season)).filter(NBATeamStatsDB.team == req.equipo_local).scalar()
+    ultima_temporada_visitante = db.query(func.max(NBATeamStatsDB.season)).filter(NBATeamStatsDB.team == req.equipo_visitante).scalar()
 
-    # 3. Buscar dinámicamente el año de la temporada más reciente del Equipo Visitante
-    ultima_temporada_visitante = db.query(func.max(NBATeamStatsDB.season))\
-        .filter(NBATeamStatsDB.team == req.equipo_visitante).scalar()
-
-    # Si algún equipo no existe en la base de estadísticas, frena el flujo
     if not ultima_temporada_local or not ultima_temporada_visitante:
         raise HTTPException(
             status_code=400, 
             detail=f"Faltan estadísticas en el dataset. Local encontrado: {bool(ultima_temporada_local)}, Visitante encontrado: {bool(ultima_temporada_visitante)}"
         )
 
-    # 4. Extraer el registro estadístico de la última formación (Local)
-    stats_local = db.query(NBATeamStatsDB)\
-        .filter(NBATeamStatsDB.team == req.equipo_local, NBATeamStatsDB.season == ultima_temporada_local).first()
+    stats_local = db.query(NBATeamStatsDB).filter(NBATeamStatsDB.team == req.equipo_local, NBATeamStatsDB.season == ultima_temporada_local).first()
+    stats_visitante = db.query(NBATeamStatsDB).filter(NBATeamStatsDB.team == req.equipo_visitante, NBATeamStatsDB.season == ultima_temporada_visitante).first()
 
-    # 5. Extraer el registro estadístico de la última formación (Visitante)
-    stats_visitante = db.query(NBATeamStatsDB)\
-        .filter(NBATeamStatsDB.team == req.equipo_visitante, NBATeamStatsDB.season == ultima_temporada_visitante).first()
-
-    # Calcular Puntos Por Partido (PPG = pts / g) usando solo la formación más reciente 
     promedio_local = stats_local.pts / stats_local.g
     promedio_visitante = stats_visitante.pts / stats_visitante.g
 
-    # 6. Regla analítica: Gana la franquicia con mejor promedio ofensivo actual
     if promedio_local >= promedio_visitante:
         ganador = req.equipo_local
     else:
         ganador = req.equipo_visitante
 
-    # 7. Persistir la predicción en la base de datos indexada al id_usuario
     nueva_prediccion = PrediccionDB(
         id_usuario=req.id_usuario,
         equipo_local=req.equipo_local,
@@ -336,7 +312,6 @@ def simular_y_guardar_prediccion(req: PrediccionRequest, db: Session = Depends(g
     )
     db.add(nueva_prediccion)
     
-    # 8. Guardar la acción en la entidad de Historial de auditoría
     nuevo_historial = HistorialDB(
         accion="PREDICCIÓN RECIENTE",
         descripcion=f"Simuló {req.equipo_local} ({ultima_temporada_local}) vs {req.equipo_visitante} ({ultima_temporada_visitante}). Ganador predicho: {ganador}",
@@ -344,11 +319,9 @@ def simular_y_guardar_prediccion(req: PrediccionRequest, db: Session = Depends(g
     )
     db.add(nuevo_historial)
     
-    # Confirmar cambios en SQLite
     db.commit()
     db.refresh(nueva_prediccion)
 
-    # Retornar la payload estructurada para el Frontend
     return {
         "status": "success",
         "mensaje": "Predicción calculada y guardada con éxito",
@@ -368,3 +341,25 @@ def simular_y_guardar_prediccion(req: PrediccionRequest, db: Session = Depends(g
             "ganador_predicho": ganador
         }
     }
+
+
+# Endpoint para obtener todas las predicciones de un usuario
+@app.get("/predicciones/usuario/{user_id}", status_code=200)
+def obtener_predicciones_usuario(user_id: int, db: Session = Depends(get_db)):
+    usuario = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    preds = db.query(PrediccionDB).filter(PrediccionDB.id_usuario == user_id).order_by(PrediccionDB.fecha_simulacion.desc()).all()
+
+    resultado = []
+    for p in preds:
+        resultado.append({
+            "id_prediccion": p.id_prediccion,
+            "equipo_local": p.equipo_local,
+            "equipo_visitante": p.equipo_visitante,
+            "ganador_predicho": p.ganador_predicho,
+            "fecha_simulacion": p.fecha_simulacion.isoformat()
+        })
+
+    return {"status": "success", "total": len(resultado), "predicciones": resultado}
