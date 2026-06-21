@@ -265,6 +265,26 @@ def recuperar_contrasena(recovery: PasswordRecoveryRequest, db: Session = Depend
 
 
 # ==========================================
+# ENDPOINT PARA OBTENER EQUIPOS DISPONIBLES
+# ==========================================
+@app.get("/equipos", status_code=200)
+def obtener_equipos_disponibles(db: Session = Depends(get_db)):
+    # Buscamos todos los nombres únicos de la columna 'team' en la tabla de estadísticas
+    equipos_unicos = db.query(NBATeamStatsDB.team).distinct().all()
+    
+    # Como la consulta devuelve una lista de tuplas [(LAL,), (BOS,)], las limpiamos a strings simples
+    lista_equipos = [equipo[0] for equipo in equipos_unicos]
+    
+    # Opcional: los ordenamos alfabéticamente para que sea más fácil de leer
+    lista_equipos.sort()
+    
+    return {
+        "status": "success",
+        "total_equipos": len(lista_equipos),
+        "equipos": lista_equipos
+    }
+
+# ==========================================
 # ENDPOINT DE SIMULACIÓN Y PREDICCIONES
 # ==========================================
 @app.post("/predicciones/simular", status_code=200)
