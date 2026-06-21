@@ -746,6 +746,12 @@
         display: none;
       }
     }
+    /* Hide UI for Users section while keeping backend and markup intact */
+    /* To show again, remove or comment this block */
+    #nav-usuarios, #tnav-gestion, #page-usuarios {
+      display: none !important;
+    }
+
     /* ── SPIN ANIMATION (btn loading) ── */
     @keyframes spin {
       to { transform: rotate(360deg); }
