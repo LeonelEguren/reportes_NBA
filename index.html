@@ -781,10 +781,10 @@
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">directions_run</span>
         <span>Jugadores</span>
       </a>
-      <a class="nav-link" onclick="navigate('usuarios')" id="nav-usuarios">
-        <span class="material-symbols-outlined nav-icon" style="font-size:20px;">manage_accounts</span>
-        <span>Usuarios</span>
-      </a>
+      <a class="nav-link" onclick="navigate('usuarios')" id="nav-usuarios" style="display:none;">
+  <span class="material-symbols-outlined nav-icon" style="font-size:20px;">manage_accounts</span>
+  <span>Usuarios</span>
+</a>
       <a class="nav-link" onclick="navigate('pronostico')" id="nav-pronostico">
         <span class="material-symbols-outlined nav-icon" style="font-size:20px;">query_stats</span>
         <span>Generar Pronóstico</span>
@@ -811,7 +811,7 @@
           ANALYTICS</span>
         <div style="display:flex;gap:2px;margin-left:4px;" class="hide-mob">
           <button class="nav-tab active" onclick="navigate('dashboard')" id="tnav-dashboard">Visualización</button>
-          <button class="nav-tab" onclick="navigate('usuarios')" id="tnav-gestion">Gestión</button>
+          <button class="nav-tab" onclick="navigate('usuarios')" id="tnav-gestion" style="display:none;">Gestión</button>
           <button class="nav-tab" onclick="navigate('pronostico')" id="tnav-pronostico">Pronóstico</button>
         </div>
       </div>
@@ -930,14 +930,14 @@
 
           <div style="padding:10px 16px;background:#0c0e12;border-bottom:1px solid #5a413a;flex-shrink:0;">
             <div class="tableau-tabs" id="tableau-tabs">
-              <button class="tab-btn" onclick="selectTab(this,'hoja1','Hoja 1')">Hoja 1</button>
-              <button class="tab-btn" onclick="selectTab(this,'hoja2','Hoja 2')">Hoja 2</button>
-              <button class="tab-btn" onclick="selectTab(this,'hoja3','Hoja 3')">Hoja 3</button>
-              <button class="tab-btn" onclick="selectTab(this,'hoja4','Hoja 4')">Hoja 4</button>
-              <button class="tab-btn" onclick="selectTab(this,'hoja5','Hoja 5')">Hoja 5</button>
-              <button class="tab-btn active" onclick="selectTab(this,'dash1','Dashboard 1')">Dashboard 1</button>
-              <button class="tab-btn" onclick="selectTab(this,'dash2','Dashboard 2')">Dashboard 2</button>
-              <button class="tab-btn" onclick="selectTab(this,'dash3','Dashboard 3')">Dashboard 3</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja1','Pts. Anotados/Recibidos')">Pts. Anotados/Recibidos</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja2','Evolución NET Rating')">Evolución NET Rating</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja3','Evolución % de Triples')">Evolución % de Triples</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja4','Top Equipos NET Rating')">Top Equipos NET Rating</button>
+              <button class="tab-btn" onclick="selectTab(this,'hoja5','NET Rating por Equipo/Temp.')">NET Rating por Equipo/Temp.</button>
+              <button class="tab-btn active" onclick="selectTab(this,'dash1','Pts. Anotados/Recibidos')">Pts. Anotados/Recibidos</button>
+              <button class="tab-btn" onclick="selectTab(this,'dash2','Evolución % de Triples')">Evolución % de Triples</button>
+              <button class="tab-btn" onclick="selectTab(this,'dash3','NET Rating por Equipo/Temp.')">NET Rating por Equipo/Temp.</button>
             </div>
           </div>
 
@@ -1006,7 +1006,7 @@
           style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
           <div>
             <h2 class="section-title">JUGADORES NBA</h2>
-            <p class="section-sub">Estadísticas por temporada 2024-25 · ABM completo</p>
+            <p class="section-sub">Estadísticas por temporada 2026 · ABM completo</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn-secondary" onclick="exportPlayers()">
@@ -1380,21 +1380,12 @@
     // ════════════════════════════════════════════════════
 
     window.onload = () => {
-      cargarUsuarios();
-    };
+  cargarUsuarios();
+  cargarJugadores();
+};
 
-    let usersData = [];
-
-    let playersData = [
-      { id: 1, name: 'Nikola Jokic', team: 'DEN', pos: 'C', ppg: 29.7, rpg: 13.1, apg: 9.2, per: 31.8, ts: 0.652, status: 'ACTIVE' },
-      { id: 2, name: 'Shai Gilgeous-Alexander', team: 'OKC', pos: 'G', ppg: 30.1, rpg: 5.5, apg: 6.4, per: 30.4, ts: 0.636, status: 'ACTIVE' },
-      { id: 3, name: 'Luka Doncic', team: 'DAL', pos: 'G', ppg: 32.4, rpg: 8.6, apg: 9.8, per: 29.1, ts: 0.615, status: 'ACTIVE' },
-      { id: 4, name: 'Giannis Antetokounmpo', team: 'MIL', pos: 'F', ppg: 31.0, rpg: 11.5, apg: 5.8, per: 29.9, ts: 0.648, status: 'INJURED' },
-      { id: 5, name: 'Joel Embiid', team: 'PHI', pos: 'C', ppg: 28.5, rpg: 10.2, apg: 4.1, per: 28.7, ts: 0.622, status: 'INACTIVE' },
-      { id: 6, name: 'Jayson Tatum', team: 'BOS', pos: 'F', ppg: 27.2, rpg: 8.1, apg: 4.9, per: 24.5, ts: 0.604, status: 'ACTIVE' },
-      { id: 7, name: 'Anthony Edwards', team: 'MIN', pos: 'G', ppg: 26.4, rpg: 5.4, apg: 5.1, per: 23.1, ts: 0.598, status: 'ACTIVE' },
-      { id: 8, name: 'Kevin Durant', team: 'PHX', pos: 'F', ppg: 27.1, rpg: 6.6, apg: 5.0, per: 24.2, ts: 0.641, status: 'ACTIVE' }
-    ];
+let usersData = [];
+let playersData = [];
 
     // Pagination states
     let usersPage = 1, usersLimit = 5, filteredUsers = [...usersData];
@@ -1646,6 +1637,22 @@
 
       renderUsers();
     }
+
+    async function cargarJugadores() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/jugadores/`);
+    const data = await response.json();
+
+    playersData = data.jugadores;
+    filteredPlayersList = [...playersData];
+
+    renderPlayers();
+    initCharts();
+  } catch (error) {
+    console.error('Error al cargar jugadores:', error);
+    showToast('No se pudieron cargar los jugadores', 'error');
+  }
+}
 
 
     function renderUsers() {

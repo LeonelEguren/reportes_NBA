@@ -1,5 +1,6 @@
 import csv
 from main import SessionLocal, NBATeamStatsDB
+from main import SessionLocal, NBATeamStatsDB, NBAPlayerStatsDB
 
 # Función auxiliar para convertir datos de forma segura
 def limpiar_entero(valor):
@@ -9,6 +10,53 @@ def limpiar_entero(valor):
         return int(valor)
     except ValueError:
         return 0
+
+def importar_jugadores():
+    db = SessionLocal()
+    archivo_path = "Team Totals.csv"
+
+    print(" [SISTEMA] Leyendo estadísticas individuales de jugadores...")
+
+    try:
+        with open(archivo_path, mode="r", encoding="utf-8") as f:
+            lector = csv.DictReader(f)
+            contador = 0
+
+            for fila in lector:
+                if not fila.get("season") or not fila.get("team") or not fila.get("player"):
+                    continue
+
+                team = fila["team"]
+                # Descartamos filas de jugadores transferidos (2TM, 3TM, 4TM...)
+                if "TM" in team:
+                    continue
+
+                jugador = NBAPlayerStatsDB(
+                    season=int(fila["season"]),
+                    player=fila["player"],
+                    team=team,
+                    pos=fila.get("pos") or None,
+                    g=limpiar_entero(fila.get("g")),
+                    pts=limpiar_entero(fila.get("pts")),
+                    trb=limpiar_entero(fila.get("trb")),
+                    ast=limpiar_entero(fila.get("ast")),
+                    fg=limpiar_entero(fila.get("fg")),
+                    fga=limpiar_entero(fila.get("fga")),
+                    ft=limpiar_entero(fila.get("ft")),
+                    fta=limpiar_entero(fila.get("fta"))
+                )
+                db.add(jugador)
+                contador += 1
+
+            db.commit()
+            print(f" [SISTEMA] ¡{contador} registros de jugadores cargados con éxito!")
+
+    except FileNotFoundError:
+        print(f" [ERROR] No se encontró el archivo '{archivo_path}'.")
+    except Exception as e:
+        print(f" [ERROR INESPERADO] {str(e)}")
+    finally:
+        db.close()
 
 def importar_y_consolidar_dataset():
     db = SessionLocal()
@@ -96,3 +144,4 @@ def importar_y_consolidar_dataset():
 
 if __name__ == "__main__":
     importar_y_consolidar_dataset()
+    importar_jugadores()

@@ -63,6 +63,22 @@ class NBATeamStatsDB(Base):
     blk = Column(Integer, nullable=True)                # Bloqueos 
     stl = Column(Integer, nullable=True)                # Robos 
 
+class NBAPlayerStatsDB(Base):
+    __tablename__ = "nba_player_stats"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    season = Column(Integer, nullable=False, index=True)
+    player = Column(String, nullable=False, index=True)
+    team = Column(String, nullable=False, index=True)
+    pos = Column(String, nullable=True)
+    g = Column(Integer, nullable=False)
+    pts = Column(Integer, nullable=False)
+    trb = Column(Integer, nullable=False)
+    ast = Column(Integer, nullable=False)
+    fg = Column(Integer, nullable=False)
+    fga = Column(Integer, nullable=False)
+    ft = Column(Integer, nullable=False)
+    fta = Column(Integer, nullable=False)
+
 class PrediccionDB(Base):
     __tablename__ = "predicciones"
     id_prediccion = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -347,4 +363,46 @@ def simular_y_guardar_prediccion(req: PrediccionRequest, db: Session = Depends(g
             },
             "ganador_predicho": ganador
         }
+    }
+
+# ==========================================
+# ENDPOINT DE JUGADORES
+# ==========================================
+@app.get("/jugadores/")
+def listar_jugadores(temporada: int = None, db: Session = Depends(get_db)):
+    # Si no se especifica temporada, usamos la más reciente disponible
+    if temporada is None:
+        temporada = db.query(func.max(NBAPlayerStatsDB.season)).scalar()
+
+    jugadores = db.query(NBAPlayerStatsDB)\
+        .filter(NBAPlayerStatsDB.season == temporada)\
+        .all()
+
+    resultado = []
+    for j in jugadores:
+        partidos = j.g if j.g > 0 else 1  # evita división por cero
+        ppg = round(j.pts / partidos, 1)
+        rpg = round(j.trb / partidos, 1)
+        apg = round(j.ast / partidos, 1)
+        ts_pct = round(
+            j.pts / (2 * (j.fga + 0.44 * j.fta)), 3
+        ) if (j.fga + j.fta) > 0 else 0.0
+
+        resultado.append({
+            "id": j.id,
+            "name": j.player,
+            "team": j.team,
+            "pos": j.pos,
+            "ppg": ppg,
+            "rpg": rpg,
+            "apg": apg,
+            "per": 0,  # el dataset no trae PER calculado; lo dejamos en 0 por ahora
+            "ts": ts_pct,
+            "status": "ACTIVE"
+        })
+
+    return {
+        "temporada": temporada,
+        "total": len(resultado),
+        "jugadores": resultado
     }
