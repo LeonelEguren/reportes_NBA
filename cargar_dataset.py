@@ -1,5 +1,5 @@
 import csv
-from main import SessionLocal, NBATeamStatsDB
+from main import SessionLocal, NBATeamStatsDB, NBAPlayerStatsDB, Base, engine
 
 # Función auxiliar para convertir datos de forma segura
 def limpiar_entero(valor):
@@ -10,8 +10,53 @@ def limpiar_entero(valor):
     except ValueError:
         return 0
 
+def importar_jugadores():
+    archivo_path = "Team Totals.csv"
+    print(" [SISTEMA] Leyendo estadísticas individuales de jugadores...")
+
+    try:
+        with SessionLocal() as db:
+            jugadores_a_crear = []
+            with open(archivo_path, mode="r", encoding="utf-8") as f:
+                lector = csv.DictReader(f)
+
+                for fila in lector:
+                    if not fila.get("season") or not fila.get("team") or not fila.get("player"):
+                        continue
+
+                    team = fila["team"]
+                    # Descartamos filas de jugadores transferidos (TOT)
+                    if team == "TOT":
+                        continue
+
+                    jugador = NBAPlayerStatsDB(
+                        season=int(fila["season"]),
+                        player=fila["player"],
+                        team=team,
+                        pos=fila.get("pos") or None,
+                        g=limpiar_entero(fila.get("g")),
+                        pts=limpiar_entero(fila.get("pts")),
+                        trb=limpiar_entero(fila.get("trb")),
+                        ast=limpiar_entero(fila.get("ast")),
+                        fg=limpiar_entero(fila.get("fg")),
+                        fga=limpiar_entero(fila.get("fga")),
+                        ft=limpiar_entero(fila.get("ft")),
+                        fta=limpiar_entero(fila.get("fta"))
+                    )
+                    jugadores_a_crear.append(jugador)
+
+            print(f" [SISTEMA] Migrando {len(jugadores_a_crear)} registros de jugadores a la base de datos...")
+            db.bulk_save_objects(jugadores_a_crear)
+            db.commit()
+            print(f" [SISTEMA] ¡{len(jugadores_a_crear)} registros de jugadores cargados con éxito!")
+
+    except FileNotFoundError:
+        print(f" [ERROR] No se encontró el archivo '{archivo_path}'.")
+    except Exception as e:
+        db.rollback()
+        print(f" [ERROR INESPERADO] {str(e)}")
+
 def importar_y_consolidar_dataset():
-    db = SessionLocal()
     archivo_path = "Team Totals.csv" 
     
     print(" [SISTEMA] Leyendo estadísticas de jugadores y consolidando por equipo...")
@@ -61,38 +106,46 @@ def importar_y_consolidar_dataset():
                 acumulador[clave]["blk"] += limpiar_entero(fila.get("blk"))
                 acumulador[clave]["stl"] += limpiar_entero(fila.get("stl"))
 
-        print(f" [SISTEMA] Migrando {len(acumulador)} registros consolidados a la base de datos...")
-        
-        # Guardamos la consolidación en la tabla de SQLite
-        for (season, team), metrics in acumulador.items():
-            stat = NBATeamStatsDB(
-                season=season,
-                team=team,
-                g=metrics["g"] if metrics["g"] > 0 else 82,
-                pts=metrics["pts"],
-                opp_pts=0, 
-                fg=metrics["fg"],
-                fga=metrics["fga"],
-                fg3=metrics["fg3"],
-                fg3a=metrics["fg3a"],
-                ft=metrics["ft"],
-                trb=metrics["trb"],
-                ast=metrics["ast"],
-                tov=metrics["tov"],
-                blk=metrics["blk"],
-                stl=metrics["stl"]
-            )
-            db.add(stat)
+        with SessionLocal() as db:
+            print(f" [SISTEMA] Migrando {len(acumulador)} registros consolidados a la base de datos...")
             
-        db.commit()
-        print(" [SISTEMA] ¡Dataset consolidado y cargado con éxito en nba_users.db!")
+            # Guardamos la consolidación en la tabla de SQLite
+            for (season, team), metrics in acumulador.items():
+                stat = NBATeamStatsDB(
+                    season=season,
+                    team=team,
+                    g=metrics["g"] if metrics["g"] > 0 else 82,
+                    pts=metrics["pts"],
+                    opp_pts=0, 
+                    fg=metrics["fg"],
+                    fga=metrics["fga"],
+                    fg3=metrics["fg3"],
+                    fg3a=metrics["fg3a"],
+                    ft=metrics["ft"],
+                    trb=metrics["trb"],
+                    ast=metrics["ast"],
+                    tov=metrics["tov"],
+                    blk=metrics["blk"],
+                    stl=metrics["stl"]
+                )
+                db.add(stat)
+                
+            db.commit()
+            print(" [SISTEMA] ¡Dataset consolidado y cargado con éxito en nba_users.db!")
         
     except FileNotFoundError:
         print(f" [ERROR] No se encontró el archivo '{archivo_path}'.")
     except Exception as e:
         print(f" [ERROR INESPERADO] {str(e)}")
-    finally:
-        db.close()
+
+def inicializar_base_de_datos():
+    print(" [SISTEMA] Creando todas las tablas en la base de datos si no existen...")
+    # Crea las tablas (usuarios, predicciones, historial, etc.) definidas en main.py
+    Base.metadata.create_all(bind=engine)
+    print(" [SISTEMA] Tablas verificadas/creadas con éxito.")
+    
+    importar_y_consolidar_dataset()
+    importar_jugadores()
 
 if __name__ == "__main__":
-    importar_y_consolidar_dataset()
+    inicializar_base_de_datos()

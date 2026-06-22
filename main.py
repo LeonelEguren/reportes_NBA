@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine, Float, func
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.orm import sessionmaker, Session
 from fastapi.middleware.cors import CORSMiddleware
 import bcrypt
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 import datetime
 
@@ -63,6 +63,22 @@ class NBATeamStatsDB(Base):
     blk = Column(Integer, nullable=True)                # Bloqueos 
     stl = Column(Integer, nullable=True)                # Robos 
 
+class NBAPlayerStatsDB(Base):
+    __tablename__ = "nba_player_stats"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    season = Column(Integer, nullable=False, index=True)
+    player = Column(String, nullable=False, index=True)
+    team = Column(String, nullable=False, index=True)
+    pos = Column(String, nullable=True)
+    g = Column(Integer, nullable=False)
+    pts = Column(Integer, nullable=False)
+    trb = Column(Integer, nullable=False)
+    ast = Column(Integer, nullable=False)
+    fg = Column(Integer, nullable=False)
+    fga = Column(Integer, nullable=False)
+    ft = Column(Integer, nullable=False)
+    fta = Column(Integer, nullable=False)
+
 class PrediccionDB(Base):
     __tablename__ = "predicciones"
     id_prediccion = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -112,6 +128,13 @@ class PrediccionRequest(BaseModel):
     equipo_local: str
     equipo_visitante: str
 
+class PrediccionHistorial(BaseModel):
+    id_prediccion: int
+    equipo_local: str
+    equipo_visitante: str
+    ganador_predicho: str
+    fecha_simulacion: datetime.datetime
+
 
 # ==========================================
 # DEPENDENCIAS
@@ -144,29 +167,17 @@ Base.metadata.create_all(bind=engine)
 
 # ENDPOINT DE CONSULTA DE EQUIPOS (DICCIONARIO ESTÁTICO)
 @app.get("/equipos", status_code=200)
-def obtener_equipos_disponibles(db: Session = Depends(get_db)):
-    NOMBRES_EQUIPOS = {
-        "ATL": "Atlanta Hawks", "BOS": "Boston Celtics", "BKN": "Brooklyn Nets",
-        "CHA": "Charlotte Hornets", "CHI": "Chicago Bulls", "CLE": "Cleveland Cavaliers",
-        "DAL": "Dallas Mavericks", "DEN": "Denver Nuggets", "DET": "Detroit Pistons",
-        "GSW": "Golden State Warriors", "HOU": "Houston Rockets", "IND": "Indiana Pacers",
-        "LAC": "Los Angeles Clippers", "LAL": "Los Angeles Lakers", "MEM": "Memphis Grizzlies",
-        "MIA": "Miami Heat", "MIL": "Milwaukee Bucks", "MIN": "Minnesota Timberwolves",
-        "NOP": "New Orleans Pelicans", "NYK": "New York Knicks", "OKC": "Oklahoma Thunder",
-        "ORL": "Orlando Magic", "PHI": "Philadelphia 76ers", "PHX": "Phoenix Suns",
-        "POR": "Portland Trail Blazers", "SAC": "Sacramento Kings", "SAS": "San Antonio Spurs",
-        "TOR": "Toronto Raptors", "UTA": "Utah Jazz", "WAS": "Washington Wizards"
-    }
+def obtener_equipos_disponibles(db: Session = Depends(get_db)):    
     equipos_db = db.query(NBATeamStatsDB.team).distinct().all()
-    codigos_existentes = [equipo[0] for equipo in equipos_db]
-    codigos_existentes.sort()
-
-    resultado = []
-    for codigo in codigos_existentes:
-        nombre_completo = NOMBRES_EQUIPOS.get(codigo, "Equipo Desconocido")
-        resultado.append({"nombre": nombre_completo, "codigo": codigo})
     
-    return {"status": "success", "total_equipos": len(resultado), "equipos": resultado}
+    if not equipos_db:
+        return {"status": "success", "total_equipos": 0, "equipos": []}
+
+    # Extraer los códigos y ordenarlos alfabéticamente
+    codigos_equipos = sorted([equipo[0] for equipo in equipos_db])
+
+    # Devolver una lista simple de códigos
+    return {"status": "success", "total_equipos": len(codigos_equipos), "equipos": codigos_equipos}
 
 
 # RF-01: Creación de Cuenta (Hashear)
@@ -227,6 +238,8 @@ def login(user_login: UserLogin, db: Session = Depends(get_db)):
 
 # RF-03: Gestión de Perfil
 @app.put("/usuarios/{user_id}/perfil")
+# En un sistema real, aquí se usaría un token para verificar que el usuario
+# que hace la petición es el mismo que el del user_id.
 def actualizar_perfil(user_id: int, perfil_update: ProfileUpdate, db: Session = Depends(get_db)):
     db_user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not db_user:
@@ -247,6 +260,8 @@ def actualizar_perfil(user_id: int, perfil_update: ProfileUpdate, db: Session = 
 
 # RF-04: Cambio de Contraseña
 @app.put("/usuarios/{user_id}/cambiar-contrasena")
+# Al igual que en el perfil, se debería validar que el usuario autenticado
+# coincide con el user_id que se intenta modificar.
 def cambiar_contrasena(user_id: int, pass_update: PasswordUpdate, db: Session = Depends(get_db)):
     db_user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not db_user:
@@ -342,24 +357,59 @@ def simular_y_guardar_prediccion(req: PrediccionRequest, db: Session = Depends(g
         }
     }
 
-
-# Endpoint para obtener todas las predicciones de un usuario
+# RF-06: Endpoint para ver el historial de predicciones de un usuario
 @app.get("/predicciones/usuario/{user_id}", status_code=200)
-def obtener_predicciones_usuario(user_id: int, db: Session = Depends(get_db)):
+def obtener_historial_de_usuario(user_id: int, db: Session = Depends(get_db)):
+    # Validar que el usuario exista
     usuario = db.query(UserDB).filter(UserDB.id == user_id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-    preds = db.query(PrediccionDB).filter(PrediccionDB.id_usuario == user_id).order_by(PrediccionDB.fecha_simulacion.desc()).all()
+    # Obtener todas las predicciones para ese usuario, ordenadas por fecha descendente
+    predicciones = db.query(PrediccionDB)\
+        .filter(PrediccionDB.id_usuario == user_id)\
+        .order_by(PrediccionDB.fecha_simulacion.desc())\
+        .all()
+
+    return {"status": "success", "predicciones": predicciones}
+# ==========================================
+# ENDPOINT DE JUGADORES
+# ==========================================
+@app.get("/jugadores/")
+def listar_jugadores(temporada: int = None, db: Session = Depends(get_db)):
+    # Si no se especifica temporada, usamos la más reciente disponible
+    if temporada is None:
+        temporada = db.query(func.max(NBAPlayerStatsDB.season)).scalar()
+
+    jugadores = db.query(NBAPlayerStatsDB)\
+        .filter(NBAPlayerStatsDB.season == temporada)\
+        .all()
 
     resultado = []
-    for p in preds:
+    for j in jugadores:
+        partidos = j.g if j.g > 0 else 1  # evita división por cero
+        ppg = round(j.pts / partidos, 1)
+        rpg = round(j.trb / partidos, 1)
+        apg = round(j.ast / partidos, 1)
+        ts_pct = round(
+            j.pts / (2 * (j.fga + 0.44 * j.fta)), 3
+        ) if (j.fga + j.fta) > 0 else 0.0
+
         resultado.append({
-            "id_prediccion": p.id_prediccion,
-            "equipo_local": p.equipo_local,
-            "equipo_visitante": p.equipo_visitante,
-            "ganador_predicho": p.ganador_predicho,
-            "fecha_simulacion": p.fecha_simulacion.isoformat()
+            "id": j.id,
+            "name": j.player,
+            "team": j.team,
+            "pos": j.pos,
+            "ppg": ppg,
+            "rpg": rpg,
+            "apg": apg,
+            "per": 0,  # el dataset no trae PER calculado; lo dejamos en 0 por ahora
+            "ts": ts_pct,
+            "status": "ACTIVE"
         })
 
-    return {"status": "success", "total": len(resultado), "predicciones": resultado}
+    return {
+        "temporada": temporada,
+        "total": len(resultado),
+        "jugadores": resultado
+    }
