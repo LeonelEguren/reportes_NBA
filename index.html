@@ -1408,20 +1408,31 @@ let playersData = [];
     // ════════════════════════════════════════════════════
     const BACKEND_URL = "http://127.0.0.1:8000";
 
-    function mostrarLoginEnModal() {
-      const modal = document.getElementById('user-modal');
-      if (!modal) return;
+    // =========================================================================
+// MÓDULO DE AUTENTICACIÓN (LOGIN Y REGISTRO COMBINADO)
+// =========================================================================
 
-      // Modificamos el contenedor para agregar un atributo de control que impida el cierre externo
-      modal.setAttribute('data-bloqueado', 'true');
+function mostrarLoginEnModal() {
+  const modal = document.getElementById('user-modal');
+  if (!modal) return;
 
-      modal.querySelector('.modal').innerHTML = `
+  // Impedir cierre externo asignando el atributo de bloqueo
+  modal.setAttribute('data-bloqueado', 'true');
+
+  // Renderizamos la estructura base con pestañas dinámicas
+  modal.querySelector('.modal').innerHTML = `
     <div class="modal-header">
-      <h3 class="modal-title" style="color: #ffb874;">🏀 INGRESO AL SISTEMA</h3>
+      <h3 class="modal-title" id="auth-modal-title" style="color: #ffb874;">🏀 INGRESO AL SISTEMA</h3>
       <button class="btn-icon" onclick="cerrarLoginForzado()">
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
+    
+    <div style="display: flex; border-bottom: 1px solid #5a413a; margin-bottom: 20px;">
+      <button id="tab-login" type="button" onclick="cambiarVistaAuth('login')" style="flex: 1; padding: 10px; text-align: center; color: #ffb874; border-bottom: 2px solid #ffb874; font-size: 14px; font-weight: 600;">Iniciar Sesión</button>
+      <button id="tab-registro" type="button" onclick="cambiarVistaAuth('registro')" style="flex: 1; padding: 10px; text-align: center; color: #e2e2e8; opacity: 0.6; border-bottom: 2px solid transparent; font-size: 14px; font-weight: 600;">Registrarse</button>
+    </div>
+
     <form id="form-login-api" onsubmit="enviarLoginBackend(event)">
       <div class="form-group">
         <label class="form-label">Correo Electrónico *</label>
@@ -1438,10 +1449,168 @@ let playersData = [];
         <button type="submit" class="btn-primary" style="background:#ffb874; color:#4b2800;">Ingresar</button>
       </div>
     </form>
+
+    <form id="form-registro-api" onsubmit="enviarRegistroBackend(event)" class="hidden">
+      <div style="display: flex; gap: 12px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label class="form-label">Nombre *</label>
+          <input class="w-full bg-[#161920] border border-[#5a413a] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#6b7280] focus:border-[#ffb874] outline-none" 
+                 id="reg-nombre" type="text" placeholder="Michael" required/>
+        </div>
+        <div style="flex: 1;">
+          <label class="form-label">Apellido *</label>
+          <input class="w-full bg-[#161920] border border-[#5a413a] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#6b7280] focus:border-[#ffb874] outline-none" 
+                 id="reg-apellido" type="text" placeholder="Jordan" required/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo Electrónico *</label>
+        <input class="w-full bg-[#161920] border border-[#5a413a] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#6b7280] focus:border-[#ffb874] outline-none" 
+               id="reg-correo" type="email" placeholder="mj23@analytics.nba.com" required/>
+      </div>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label class="form-label">Contraseña *</label>
+        <input class="w-full bg-[#161920] border border-[#5a413a] rounded-lg px-3 py-2 text-sm text-[#e2e2e8] placeholder-[#6b7280] focus:border-[#ffb874] outline-none" 
+               id="reg-contrasena" type="password" placeholder="••••••••" required/>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button type="button" class="btn-secondary" onclick="cerrarLoginForzado()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="background:#ffb874; color:#4b2800;">Registrarme</button>
+      </div>
+    </form>
   `;
 
-      openModal('user-modal');
+  openModal('user-modal');
+}
+
+// Alterna visualmente entre las pestañas de Login y Registro
+function cambiarVistaAuth(vista) {
+  const title = document.getElementById('auth-modal-title');
+  const tabLogin = document.getElementById('tab-login');
+  const tabRegistro = document.getElementById('tab-registro');
+  const formLogin = document.getElementById('form-login-api');
+  const formRegistro = document.getElementById('form-registro-api');
+
+  if (vista === 'login') {
+    title.innerHTML = "🏀 INGRESO AL SISTEMA";
+    formLogin.classList.remove('hidden');
+    formRegistro.classList.add('hidden');
+    
+    tabLogin.style.color = "#ffb874";
+    tabLogin.style.borderBottomColor = "#ffb874";
+    tabLogin.style.opacity = "1";
+    
+    tabRegistro.style.color = "#e2e2e8";
+    tabRegistro.style.borderBottomColor = "transparent";
+    tabRegistro.style.opacity = "0.6";
+  } else {
+    title.innerHTML = "🏀 REGISTRO DE USUARIO";
+    formLogin.classList.add('hidden');
+    formRegistro.classList.remove('hidden');
+    
+    tabRegistro.style.color = "#ffb874";
+    tabRegistro.style.borderBottomColor = "#ffb874";
+    tabRegistro.style.opacity = "1";
+    
+    tabLogin.style.color = "#e2e2e8";
+    tabLogin.style.borderBottomColor = "transparent";
+    tabLogin.style.opacity = "0.6";
+  }
+}
+
+function cerrarLoginForzado() {
+  const modal = document.getElementById('user-modal');
+  if (modal) modal.removeAttribute('data-bloqueado');
+  closeModal('user-modal');
+}
+
+// Envío del Login al Backend
+async function enviarLoginBackend(event) {
+  event.preventDefault();
+  const correo = document.getElementById('api-correo').value.trim();
+  const contrasena = document.getElementById('api-contrasena').value;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/usuarios/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ correo: correo, contrasena: contrasena })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error("usuario o contraseña incorrectas");
+
+    const usuarioReal = data.usuario ? data.usuario : data;
+    if (!usuarioReal || !usuarioReal.id) throw new Error("Respuesta inválida del servidor");
+
+    localStorage.setItem('nba_user_id', usuarioReal.id);
+    localStorage.setItem('nba_user_name', usuarioReal.nombre || "Usuario");
+
+    cerrarLoginForzado();
+    actualizarEstadoAutenticacion(true);
+    showToast("Login exitoso", "check_circle");
+  } catch (error) {
+    console.error("Error en Login:", error);
+    showToast("usuario o contraseña incorrectas", "error");
+  }
+}
+
+// Envío del Registro al Backend
+async function enviarRegistroBackend(event) {
+  event.preventDefault();
+  const nombre = document.getElementById('reg-nombre').value.trim();
+  const apellido = document.getElementById('reg-apellido').value.trim();
+  const correo = document.getElementById('reg-correo').value.trim();
+  const contrasena = document.getElementById('reg-contrasena').value;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/usuarios/registro`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, apellido, correo, contrasena })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.detail || "Error al registrar el usuario");
     }
+
+    showToast("¡Registro exitoso! Ya podés iniciar sesión", "check_circle");
+    cambiarVistaAuth('login'); // Te devuelve a la pestaña de login automáticamente
+  } catch (error) {
+    console.error("Error en Registro:", error);
+    showToast(error.message, "error");
+  }
+}
+
+function toggleLogoutMenu() {
+  const dropdown = document.getElementById('logout-dropdown');
+  if (dropdown) dropdown.classList.toggle('hidden');
+}
+
+function ejecutarLogout() {
+  localStorage.clear();
+  document.getElementById('logout-dropdown').classList.add('hidden');
+  actualizarEstadoAutenticacion(false);
+  showToast("Sesión cerrada correctamente", "info");
+  setTimeout(() => { location.reload(); }, 700);
+}
+
+function actualizarEstadoAutenticacion(isLogued) {
+  const btnLogin = document.getElementById('btn-login-header');
+  const profileMenu = document.getElementById('user-profile-menu');
+  if (!btnLogin || !profileMenu) return;
+
+  if (isLogued) {
+    btnLogin.classList.add('hidden');
+    profileMenu.classList.remove('hidden');
+    profileMenu.classList.add('flex');
+  } else {
+    btnLogin.classList.remove('hidden');
+    profileMenu.classList.add('hidden');
+    profileMenu.classList.remove('flex');
+  }
+}
 
     function cerrarLoginForzado() {
       const modal = document.getElementById('user-modal');
